@@ -38,7 +38,10 @@ services:
       - .:/var/www/html:ro
       - ./docker/panel/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     networks: [panel_internal, proxy]
-    depends_on: [panel]
+    depends_on:
+      panel:
+        condition: service_started
+        restart: true
     labels:
       - traefik.enable=true
       - traefik.http.routers.panel.rule=Host(`${PANEL_DOMAIN}`)
