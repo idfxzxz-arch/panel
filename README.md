@@ -54,6 +54,24 @@ docker compose -f compose.production.yaml ps
 
 Jangan menjalankan `git add -f .env` atau mengunggah `.env` ke GitHub. Untuk domain berbeda, ubah `APP_URL` dan `PANEL_DOMAIN` di `.env` sebelum menjalankan Compose.
 
+Jika Cloudflare Tunnel di host mengarah ke `http://localhost:8080`, biarkan `PANEL_WEB_BIND=127.0.0.1:8081` dan gunakan Nginx host sebagai reverse proxy:
+
+```nginx
+server {
+    listen 127.0.0.1:8080;
+    server_name panel-dev.idkxz.my.id;
+
+    location / {
+        proxy_pass http://127.0.0.1:8081;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+}
+```
+
 Di GitHub, tambahkan URL webhook dari halaman project, content type `application/json`, secret sekali-tampil, dan event `push`.
 
 ## Batas MVP

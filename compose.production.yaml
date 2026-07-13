@@ -32,6 +32,8 @@ services:
   panel-web:
     image: nginxinc/nginx-unprivileged:1.27-alpine
     restart: unless-stopped
+    ports:
+      - "${PANEL_WEB_BIND:-127.0.0.1:8081}:8080"
     volumes:
       - .:/var/www/html:ro
       - ./docker/panel/nginx.conf:/etc/nginx/conf.d/default.conf:ro
