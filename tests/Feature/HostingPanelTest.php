@@ -78,6 +78,45 @@ class HostingPanelTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+    public function test_admin_can_save_three_environment_variables_at_once(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::create([
+            'user_id' => $user->id, 'name' => 'Example', 'slug' => 'example', 'type' => 'static',
+            'repository' => 'https://github.com/example/site.git', 'branch' => 'main',
+        ]);
+
+        $this->actingAs($user)->post(route('projects.environment.store', $project), [
+            'variables' => [
+                ['key' => 'API_URL', 'value' => 'https://api.example.com'],
+                ['key' => 'API_TOKEN', 'value' => 'secret-token'],
+                ['key' => 'VITE_APP_NAME', 'value' => 'Example', 'is_build_time' => '1'],
+            ],
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $this->assertDatabaseCount('environment_variables', 3);
+        $this->assertTrue($project->environmentVariables()->where('key', 'VITE_APP_NAME')->firstOrFail()->is_build_time);
+    }
+
+    public function test_empty_environment_variable_rows_are_ignored(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::create([
+            'user_id' => $user->id, 'name' => 'Example', 'slug' => 'example', 'type' => 'static',
+            'repository' => 'https://github.com/example/site.git', 'branch' => 'main',
+        ]);
+
+        $this->actingAs($user)->post(route('projects.environment.store', $project), [
+            'variables' => [
+                ['key' => 'APP_NAME', 'value' => 'Example'],
+                ['key' => null, 'value' => null],
+                ['key' => null, 'value' => null],
+            ],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('environment_variables', 1);
+    }
+
     public function test_github_webhook_requires_a_valid_signature_and_branch(): void
     {
         Queue::fake();
