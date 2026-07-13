@@ -1,0 +1,3 @@
+@extends('layouts.app',['title'=>'Deployment #'.$deployment->id]) @section('content')<p><a href="{{ route('projects.show',$deployment->project) }}">← {{ $deployment->project->name }}</a></p><h1>Deployment #{{ $deployment->id }}</h1><p><span class="badge {{ $deployment->status }}">{{ $deployment->status }}</span> · {{ $deployment->trigger }} · {{ $deployment->commit_sha ?? 'commit belum diketahui' }}</p><div class="card"><h2>Log</h2><pre>@forelse($deployment->logs as $log)[{{ $log->created_at }}] [{{ strtoupper($log->level) }}] [{{ $log->step }}]
+{{ $log->message }}
+@emptyDeployment masih menunggu worker queue.@endforelse</pre></div>@endsection

@@ -1,0 +1,81 @@
+name: myhosting-panel
+services:
+  panel:
+    build:
+      context: .
+      dockerfile: docker/panel/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - panel_storage:/var/www/html/storage
+      - /opt/myhosting-panel/apps:/opt/myhosting-panel/apps
+      - /var/run/docker.sock:/var/run/docker.sock
+    group_add: ["${DOCKER_GID:-999}"]
+    networks: [panel_internal]
+    depends_on:
+      database: { condition: service_healthy }
+  queue:
+    build:
+      context: .
+      dockerfile: docker/panel/Dockerfile
+    command: php artisan queue:work --tries=1 --timeout=1200
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - panel_storage:/var/www/html/storage
+      - /opt/myhosting-panel/apps:/opt/myhosting-panel/apps
+      - /var/run/docker.sock:/var/run/docker.sock
+    group_add: ["${DOCKER_GID:-999}"]
+    networks: [panel_internal]
+    depends_on:
+      database: { condition: service_healthy }
+  panel-web:
+    image: nginxinc/nginx-unprivileged:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/panel/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [panel_internal, proxy]
+    depends_on: [panel]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.panel.rule=Host(`${PANEL_DOMAIN}`)
+      - traefik.http.routers.panel.entrypoints=websecure
+      - traefik.http.routers.panel.tls.certresolver=letsencrypt
+      - traefik.http.services.panel.loadbalancer.server.port=8080
+      - traefik.docker.network=hosting_proxy
+  database:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_DATABASE}
+      MARIADB_USER: ${DB_USERNAME}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes: [database:/var/lib/mysql]
+    networks: [panel_internal]
+    healthcheck: { test: [CMD, healthcheck.sh, --connect, --innodb_initialized], interval: 10s, timeout: 5s, retries: 10 }
+  traefik:
+    image: traefik:v3.7.1
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+    ports: ["80:80", "443:443"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+    networks: [proxy]
+networks:
+  panel_internal: { internal: true }
+  proxy: { name: hosting_proxy }
+volumes:
+  panel_storage:
+  database:
+  letsencrypt:
