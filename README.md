@@ -54,6 +54,17 @@ docker compose -f compose.production.yaml ps
 
 Jangan menjalankan `git add -f .env` atau mengunggah `.env` ke GitHub. Untuk domain berbeda, ubah `APP_URL` dan `PANEL_DOMAIN` di `.env` sebelum menjalankan Compose.
 
+Untuk memperbarui panel di server tanpa mengganti `.env`:
+
+```bash
+cd ~/Projects/panel
+git pull origin main
+docker compose -f compose.production.yaml build panel queue
+docker compose -f compose.production.yaml up -d --force-recreate panel panel-web queue
+docker compose -f compose.production.yaml exec panel php artisan optimize:clear
+docker compose -f compose.production.yaml ps
+```
+
 Jika Cloudflare Tunnel di host mengarah ke `http://localhost:8080`, biarkan `PANEL_WEB_BIND=127.0.0.1:8081` dan gunakan Nginx host sebagai reverse proxy:
 
 ```nginx
