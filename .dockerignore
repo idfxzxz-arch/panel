@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+!.env.example
+!.env.production.example
+database/*.sqlite*
+node_modules
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/testing/*
+storage/framework/views/*
+storage/logs/*
+vendor
