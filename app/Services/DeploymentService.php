@@ -29,18 +29,23 @@ class DeploymentService
                 'GIT_CONFIG_KEY_0' => 'http.extraHeader',
                 'GIT_CONFIG_VALUE_0' => 'Authorization: Basic '.base64_encode($project->githubAccount->username.':'.$project->githubAccount->token),
             ] : [];
-            if (! File::isDirectory($path.'/.git')) {
-                if (File::exists($path)) {
-                    File::deleteDirectory($path);
+            if ($project->repository) {
+                if (! File::isDirectory($path.'/.git')) {
+                    if (File::exists($path)) {
+                        File::deleteDirectory($path);
+                    }
+                    $this->runner->run(['git', 'clone', '--branch', $project->branch, '--single-branch', '--depth', '1', $project->repository, $path], dirname($path), $deployment, 'clone', false, $gitEnv);
+                } else {
+                    $this->runner->run(['git', 'fetch', 'origin', $project->branch, '--depth', '1'], $path, $deployment, 'fetch', false, $gitEnv);
+                    $this->runner->run(['git', 'reset', '--hard', 'FETCH_HEAD'], $path, $deployment, 'checkout');
+                    $this->runner->run(['git', 'clean', '-fdx', '-e', '.env'], $path, $deployment, 'clean');
                 }
-                $this->runner->run(['git', 'clone', '--branch', $project->branch, '--single-branch', '--depth', '1', $project->repository, $path], dirname($path), $deployment, 'clone', false, $gitEnv);
-            } else {
-                $this->runner->run(['git', 'fetch', 'origin', $project->branch, '--depth', '1'], $path, $deployment, 'fetch', false, $gitEnv);
-                $this->runner->run(['git', 'reset', '--hard', 'FETCH_HEAD'], $path, $deployment, 'checkout');
-                $this->runner->run(['git', 'clean', '-fdx', '-e', '.env'], $path, $deployment, 'clean');
+            } elseif ($project->type === 'wordpress') {
+                File::ensureDirectoryExists($path);
+                $deployment->logs()->create(['level' => 'info', 'step' => 'source', 'message' => 'WordPress resmi digunakan tanpa repository Git.']);
             }
             $this->templates->generate($project);
-            $sha = $this->runner->capture(['git', 'rev-parse', 'HEAD'], $path);
+            $sha = $project->repository ? $this->runner->capture(['git', 'rev-parse', 'HEAD'], $path) : null;
             $deployment->update(['commit_sha' => $sha]);
             $this->runner->run(['docker', 'compose', '-p', $project->slug, 'build', '--pull'], $path, $deployment, 'build');
             $this->runner->run(['docker', 'compose', '-p', $project->slug, 'up', '-d', '--remove-orphans'], $path, $deployment, 'start');

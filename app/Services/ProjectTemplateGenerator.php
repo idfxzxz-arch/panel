@@ -12,7 +12,7 @@ class ProjectTemplateGenerator
         $path = $project->path();
         File::ensureDirectoryExists($path);
         $this->ensureRuntimeDefaults($project);
-        File::put($path.'/Dockerfile', $this->dockerfile($project->type));
+        File::put($path.'/Dockerfile', $this->dockerfile($project));
         File::put($path.'/compose.yaml', $this->compose($project));
         $ignore = ".git\nnode_modules\nvendor\nstorage/logs/*\n".($project->type === 'vite' ? '' : ".env\n");
         File::put($path.'/.dockerignore', $ignore);
@@ -77,9 +77,9 @@ class ProjectTemplateGenerator
         $project->unsetRelation('environmentVariables');
     }
 
-    private function dockerfile(string $type): string
+    private function dockerfile(Project $project): string
     {
-        return match ($type) {
+        return match ($project->type) {
             'static' => <<<'DOCKER'
 FROM nginxinc/nginx-unprivileged:1.27-alpine
 COPY --chown=nginx:nginx . /usr/share/nginx/html
@@ -122,9 +122,12 @@ COPY --from=vendor /app/public /var/www/html/public
 EXPOSE 8080
 CMD ["nginx", "-g", "daemon off;"]
 DOCKER,
-            'wordpress' => <<<'DOCKER'
+            'wordpress' => $project->repository ? <<<'DOCKER'
 FROM wordpress:php8.3-apache
 COPY --chown=www-data:www-data . /usr/src/wordpress
+EXPOSE 80
+DOCKER : <<<'DOCKER'
+FROM wordpress:php8.3-apache
 EXPOSE 80
 DOCKER,
         }."\n";

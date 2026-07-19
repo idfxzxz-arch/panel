@@ -1,6 +1,8 @@
 # Harbor Panel
 
-MVP panel hosting Debian berbasis Laravel 12, Docker Compose, MariaDB, dan Traefik. Mendukung repository GitHub public untuk HTML static, Laravel, dan React/Vite; setiap project menjadi Compose project terpisah.
+MVP panel hosting Debian berbasis Laravel 12, Docker Compose, MariaDB, dan Traefik. Mendukung HTML static, Laravel, React/Vite, dan WordPress; setiap project menjadi Compose project terpisah.
+
+Runtime WordPress dapat dibuat tanpa repository GitHub. Panel akan menjalankan image WordPress resmi dengan MySQL 8.4, volume persisten untuk file WordPress dan database, serta environment database otomatis. Repository GitHub tetap bisa diisi bila ingin membawa theme/plugin custom.
 
 Rancangan, alur deployment, Dockerfile/Compose yang dihasilkan aplikasi, alternatif Nginx, keamanan, skema data, dan roadmap ada di [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 

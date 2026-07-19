@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug')->unique();
             $table->enum('type', ['static', 'laravel', 'vite', 'wordpress']);
-            $table->string('repository');
+            $table->string('repository')->nullable();
             $table->string('branch')->default('main');
             $table->enum('status', ['pending', 'deploying', 'running', 'stopped', 'failed'])->default('pending');
             $table->string('last_commit', 40)->nullable();

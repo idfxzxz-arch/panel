@@ -63,6 +63,27 @@ class HostingPanelTest extends TestCase
         $this->get('/infrastructure/monitoring')->assertOk()->assertSee('ONLINE')->assertSee('test');
     }
 
+    public function test_admin_can_create_wordpress_project_without_repository(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post('/projects', [
+            'name' => 'Company Blog',
+            'slug' => 'company-blog',
+            'type' => 'wordpress',
+            'branch' => 'main',
+            'domain' => 'blog.example.com',
+        ]);
+
+        $project = Project::firstOrFail();
+        $response->assertRedirect(route('projects.show', $project));
+        $this->assertSame('wordpress', $project->type);
+        $this->assertNull($project->repository);
+        $this->assertDatabaseHas('project_domains', ['domain' => 'blog.example.com']);
+        Queue::assertPushed(DeployProject::class);
+    }
+
     public function test_command_injection_shaped_input_is_rejected(): void
     {
         Queue::fake();
@@ -188,6 +209,26 @@ class HostingPanelTest extends TestCase
         $this->assertStringContainsString('traefik.http.services.wp-site.loadbalancer.server.port=80', $compose);
         $this->assertStringContainsString('WORDPRESS_DB_HOST="db:3306"', $env);
         $this->assertStringContainsString('MYSQL_DATABASE="wordpress"', $env);
+        File::deleteDirectory($root);
+    }
+
+    public function test_wordpress_template_without_repository_uses_official_image_only(): void
+    {
+        $root = storage_path('framework/testing-hosting-apps');
+        File::deleteDirectory($root);
+        config(['hosting.apps_path' => $root, 'hosting.proxy_network' => 'hosting_proxy']);
+        $user = User::factory()->create();
+        $project = Project::create([
+            'user_id' => $user->id, 'name' => 'WordPress', 'slug' => 'wp-official',
+            'type' => 'wordpress', 'repository' => null, 'branch' => 'main',
+        ]);
+        $project->domains()->create(['domain' => 'wp-official.example.com']);
+
+        app(ProjectTemplateGenerator::class)->generate($project);
+
+        $dockerfile = File::get($root.'/wp-official/Dockerfile');
+        $this->assertStringContainsString('FROM wordpress:php8.3-apache', $dockerfile);
+        $this->assertStringNotContainsString('COPY --chown=www-data:www-data . /usr/src/wordpress', $dockerfile);
         File::deleteDirectory($root);
     }
 
