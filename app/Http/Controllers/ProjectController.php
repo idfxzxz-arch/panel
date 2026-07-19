@@ -85,7 +85,7 @@ class ProjectController extends Controller
     public function applications()
     {
         $query = auth()->user()->projects()->with(['primaryDomain', 'deployments' => fn ($query) => $query->latest()->limit(1)]);
-        if (in_array(request('type'), ['static', 'laravel', 'vite'], true)) {
+        if (in_array(request('type'), ['static', 'laravel', 'vite', 'wordpress'], true)) {
             $query->where('type', request('type'));
         }
         if (in_array(request('status'), ['pending', 'deploying', 'running', 'stopped', 'failed'], true)) {

@@ -164,6 +164,33 @@ class HostingPanelTest extends TestCase
         File::deleteDirectory($root);
     }
 
+    public function test_wordpress_template_includes_mysql_and_persistent_volumes(): void
+    {
+        $root = storage_path('framework/testing-hosting-apps');
+        File::deleteDirectory($root);
+        config(['hosting.apps_path' => $root, 'hosting.proxy_network' => 'hosting_proxy']);
+        $user = User::factory()->create();
+        $project = Project::create([
+            'user_id' => $user->id, 'name' => 'WordPress', 'slug' => 'wp-site',
+            'type' => 'wordpress', 'repository' => 'https://github.com/example/wp.git', 'branch' => 'main',
+        ]);
+        $project->domains()->create(['domain' => 'wp.example.com']);
+
+        app(ProjectTemplateGenerator::class)->generate($project);
+
+        $dockerfile = File::get($root.'/wp-site/Dockerfile');
+        $compose = File::get($root.'/wp-site/compose.yaml');
+        $env = File::get($root.'/wp-site/.env');
+        $this->assertStringContainsString('FROM wordpress:php8.3-apache', $dockerfile);
+        $this->assertStringContainsString('image: mysql:8.4', $compose);
+        $this->assertStringContainsString('wordpress_data:/var/www/html', $compose);
+        $this->assertStringContainsString('db_data:/var/lib/mysql', $compose);
+        $this->assertStringContainsString('traefik.http.services.wp-site.loadbalancer.server.port=80', $compose);
+        $this->assertStringContainsString('WORDPRESS_DB_HOST="db:3306"', $env);
+        $this->assertStringContainsString('MYSQL_DATABASE="wordpress"', $env);
+        File::deleteDirectory($root);
+    }
+
     public function test_cloudflare_provisioning_creates_dns_and_tunnel_ingress(): void
     {
         Http::fake([

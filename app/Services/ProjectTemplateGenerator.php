@@ -11,7 +11,7 @@ class ProjectTemplateGenerator
     {
         $path = $project->path();
         File::ensureDirectoryExists($path);
-        $this->ensureLaravelDefaults($project);
+        $this->ensureRuntimeDefaults($project);
         File::put($path.'/Dockerfile', $this->dockerfile($project->type));
         File::put($path.'/compose.yaml', $this->compose($project));
         $ignore = ".git\nnode_modules\nvendor\nstorage/logs/*\n".($project->type === 'vite' ? '' : ".env\n");
@@ -36,18 +36,40 @@ class ProjectTemplateGenerator
         @chmod($project->path().'/.env', 0600);
     }
 
-    private function ensureLaravelDefaults(Project $project): void
+    private function ensureRuntimeDefaults(Project $project): void
     {
-        if ($project->type !== 'laravel') {
+        if ($project->type === 'laravel') {
+            $defaults = [
+                'APP_ENV' => 'production',
+                'APP_DEBUG' => 'false',
+                'APP_URL' => 'https://'.$project->primaryDomain->domain,
+                'LOG_CHANNEL' => 'stderr',
+                'APP_KEY' => 'base64:'.base64_encode(random_bytes(32)),
+            ];
+            foreach ($defaults as $key => $value) {
+                $project->environmentVariables()->firstOrCreate(['key' => $key], ['value' => $value]);
+            }
+            $project->unsetRelation('environmentVariables');
+
             return;
         }
 
+        if ($project->type !== 'wordpress') {
+            return;
+        }
+
+        $dbPassword = $project->environmentVariables()->where('key', 'WORDPRESS_DB_PASSWORD')->first()?->value ?? bin2hex(random_bytes(18));
+        $rootPassword = $project->environmentVariables()->where('key', 'MYSQL_ROOT_PASSWORD')->first()?->value ?? bin2hex(random_bytes(18));
         $defaults = [
-            'APP_ENV' => 'production',
-            'APP_DEBUG' => 'false',
-            'APP_URL' => 'https://'.$project->primaryDomain->domain,
-            'LOG_CHANNEL' => 'stderr',
-            'APP_KEY' => 'base64:'.base64_encode(random_bytes(32)),
+            'WORDPRESS_DB_HOST' => 'db:3306',
+            'WORDPRESS_DB_NAME' => 'wordpress',
+            'WORDPRESS_DB_USER' => 'wordpress',
+            'WORDPRESS_DB_PASSWORD' => $dbPassword,
+            'WORDPRESS_TABLE_PREFIX' => 'wp_',
+            'MYSQL_DATABASE' => 'wordpress',
+            'MYSQL_USER' => 'wordpress',
+            'MYSQL_PASSWORD' => $dbPassword,
+            'MYSQL_ROOT_PASSWORD' => $rootPassword,
         ];
         foreach ($defaults as $key => $value) {
             $project->environmentVariables()->firstOrCreate(['key' => $key], ['value' => $value]);
@@ -100,6 +122,11 @@ COPY --from=vendor /app/public /var/www/html/public
 EXPOSE 8080
 CMD ["nginx", "-g", "daemon off;"]
 DOCKER,
+            'wordpress' => <<<'DOCKER'
+FROM wordpress:php8.3-apache
+COPY --chown=www-data:www-data . /usr/src/wordpress
+EXPOSE 80
+DOCKER,
         }."\n";
     }
 
@@ -110,13 +137,14 @@ DOCKER,
         $domainRule = $domains->map(fn ($domain) => 'Host(`'.$domain->domain.'`)')->implode(' || ');
         $network = config('hosting.proxy_network');
         $resolver = config('hosting.acme_resolver');
+        $servicePort = $p->type === 'wordpress' ? 80 : 8080;
         $labels = <<<YAML
       - "traefik.enable=true"
       - "traefik.http.routers.{$slug}.rule={$domainRule}"
       - "traefik.http.routers.{$slug}.entrypoints=websecure"
       - "traefik.http.routers.{$slug}.tls=true"
       - "traefik.http.routers.{$slug}.tls.certresolver={$resolver}"
-      - "traefik.http.services.{$slug}.loadbalancer.server.port=8080"
+      - "traefik.http.services.{$slug}.loadbalancer.server.port={$servicePort}"
       - "traefik.docker.network={$network}"
 YAML;
         if ($p->type === 'laravel') {
@@ -148,6 +176,36 @@ networks:
   proxy: { external: true, name: {$network} }
 volumes:
   uploads:
+YAML;
+        }
+
+        if ($p->type === 'wordpress') {
+            return <<<YAML
+name: {$slug}
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - wordpress_data:/var/www/html
+    depends_on: [db]
+    networks: [internal, proxy]
+    labels:
+{$labels}
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - db_data:/var/lib/mysql
+    networks: [internal]
+networks:
+  internal: { internal: true }
+  proxy: { external: true, name: {$network} }
+volumes:
+  wordpress_data:
+  db_data:
 YAML;
         }
 

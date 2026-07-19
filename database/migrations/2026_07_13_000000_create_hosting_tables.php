@@ -21,7 +21,7 @@ return new class extends Migration
             $table->foreignId('github_account_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->enum('type', ['static', 'laravel', 'vite']);
+            $table->enum('type', ['static', 'laravel', 'vite', 'wordpress']);
             $table->string('repository');
             $table->string('branch')->default('main');
             $table->enum('status', ['pending', 'deploying', 'running', 'stopped', 'failed'])->default('pending');

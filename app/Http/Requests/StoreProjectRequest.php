@@ -16,7 +16,7 @@ class StoreProjectRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:100'], 'slug' => ['required', 'regex:/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/', 'unique:projects,slug'],
-            'type' => ['required', Rule::in(['static', 'laravel', 'vite'])],
+            'type' => ['required', Rule::in(['static', 'laravel', 'vite', 'wordpress'])],
             'repository' => ['required', 'url:http,https', 'max:500', 'regex:#^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?$#'],
             'branch' => ['required', 'max:200', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', 'not_regex:/\.\./'],
             'domain' => ['required', 'max:253', 'regex:/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/', 'unique:project_domains,domain'],
