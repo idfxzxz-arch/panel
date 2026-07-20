@@ -100,7 +100,7 @@ class ProjectController extends Controller
     {
         $secret = Str::random(64);
         $deployment = DB::transaction(function () use ($request, $secret) {
-            $p = Project::create($request->safe()->except(['domain', 'subdomain']) + [
+            $p = Project::create($request->safe()->except(['domain', 'subdomain', 'domain_mode']) + [
                 'user_id' => $request->user()->id,
                 'github_account_id' => $request->user()->githubAccount?->id,
             ]);

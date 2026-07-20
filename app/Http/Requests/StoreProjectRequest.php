@@ -21,6 +21,7 @@ class StoreProjectRequest extends FormRequest
             'branch' => ['required', 'max:200', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', 'not_regex:/\.\./'],
             'domain' => ['required', 'max:253', 'regex:/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/', 'unique:project_domains,domain'],
             'subdomain' => ['nullable', 'max:63', 'regex:/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/'],
+            'domain_mode' => ['nullable', Rule::in(['subdomain', 'custom'])],
         ];
     }
 
@@ -32,7 +33,7 @@ class StoreProjectRequest extends FormRequest
         $this->merge([
             'slug' => strtolower((string) $this->slug),
             'subdomain' => $subdomain,
-            'domain' => $integration && $subdomain !== '' ? $subdomain.'.'.$integration->zone_name : strtolower(rtrim((string) $this->domain, '.')),
+            'domain' => $integration && $this->domain_mode !== 'custom' && $subdomain !== '' ? $subdomain.'.'.$integration->zone_name : strtolower(rtrim((string) $this->domain, '.')),
             'repository' => $repository !== '' ? $repository : null,
             'branch' => trim((string) $this->branch) !== '' ? $this->branch : 'main',
         ]);

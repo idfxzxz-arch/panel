@@ -84,6 +84,31 @@ class HostingPanelTest extends TestCase
         Queue::assertPushed(DeployProject::class);
     }
 
+    public function test_admin_can_create_project_with_custom_domain_when_cloudflare_is_connected(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create();
+        CloudflareIntegration::create([
+            'user_id' => $user->id, 'account_id' => str_repeat('a', 32), 'zone_id' => str_repeat('b', 32),
+            'tunnel_id' => '550e8400-e29b-41d4-a716-446655440000', 'zone_name' => 'idkxz.my.id', 'api_token' => 'secret-cloudflare-token',
+        ]);
+
+        $this->actingAs($user)->post('/projects', [
+            'name' => 'Custom Domain App',
+            'slug' => 'custom-domain-app',
+            'type' => 'static',
+            'repository' => 'https://github.com/example/site.git',
+            'branch' => 'main',
+            'domain_mode' => 'custom',
+            'domain' => 'www.customer-domain.com',
+            'subdomain' => 'ignored',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('project_domains', ['domain' => 'www.customer-domain.com']);
+        $this->assertDatabaseMissing('project_domains', ['domain' => 'ignored.idkxz.my.id']);
+        Queue::assertPushed(DeployProject::class);
+    }
+
     public function test_command_injection_shaped_input_is_rejected(): void
     {
         Queue::fake();
@@ -257,6 +282,31 @@ class HostingPanelTest extends TestCase
             && data_get($request->data(), 'config.ingress.1.hostname') === 'app.idkxz.my.id'
             && data_get($request->data(), 'config.ingress.1.service') === 'https://traefik:443'
             && ! array_key_exists('originRequest', data_get($request->data(), 'config.ingress.0')));
+    }
+
+    public function test_cloudflare_provisioning_for_external_domain_only_creates_tunnel_ingress(): void
+    {
+        Http::fake([
+            'api.cloudflare.com/client/v4/accounts/*/cfd_tunnel/*/configurations' => Http::sequence()
+                ->push(['success' => true, 'result' => ['config' => ['ingress' => [['service' => 'http_status:404']]]]])
+                ->push(['success' => true, 'result' => ['config' => []]]),
+        ]);
+        $user = User::factory()->create();
+        $integration = CloudflareIntegration::create([
+            'user_id' => $user->id, 'account_id' => str_repeat('a', 32), 'zone_id' => str_repeat('b', 32),
+            'tunnel_id' => '550e8400-e29b-41d4-a716-446655440000', 'zone_name' => 'idkxz.my.id', 'api_token' => 'secret-cloudflare-token',
+        ]);
+        $project = Project::create(['user_id' => $user->id, 'name' => 'App', 'slug' => 'app', 'type' => 'static', 'repository' => 'https://github.com/example/app.git', 'branch' => 'main']);
+        $domain = $project->domains()->create(['domain' => 'www.customer-domain.com']);
+
+        app(CloudflareService::class)->provision($domain, $integration);
+
+        $this->assertDatabaseHas('project_domains', ['id' => $domain->id, 'cloudflare_record_id' => null, 'cloudflare_status' => 'manual_dns']);
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/dns_records'));
+        Http::assertSent(fn ($request) => $request->method() === 'PUT'
+            && str_contains($request->url(), '/configurations')
+            && data_get($request->data(), 'config.ingress.0.hostname') === 'www.customer-domain.com'
+            && data_get($request->data(), 'config.ingress.0.service') === 'https://traefik:443');
     }
 
     public function test_cloudflare_deprovisioning_deletes_dns_and_tunnel_ingress(): void

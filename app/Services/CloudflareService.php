@@ -41,6 +41,13 @@ class CloudflareService
     public function provision(ProjectDomain $domain, CloudflareIntegration $integration): void
     {
         $client = $this->client($integration->api_token);
+        if (! $this->belongsToZone($domain->domain, $integration->zone_name)) {
+            $this->upsertIngress($client, $integration, $domain->domain);
+            $domain->update(['cloudflare_record_id' => null, 'cloudflare_status' => 'manual_dns']);
+
+            return;
+        }
+
         $existing = $client->get(self::API.'/zones/'.$integration->zone_id.'/dns_records', [
             'name' => $domain->domain, 'type' => 'CNAME',
         ])->throw()->json('result', []);
@@ -117,6 +124,14 @@ class CloudflareService
         $client->put(self::API.'/accounts/'.$integration->account_id.'/cfd_tunnel/'.$integration->tunnel_id.'/configurations', [
             'config' => ['ingress' => $rules],
         ])->throw();
+    }
+
+    private function belongsToZone(string $domain, string $zone): bool
+    {
+        $domain = strtolower(rtrim($domain, '.'));
+        $zone = strtolower(rtrim($zone, '.'));
+
+        return $domain === $zone || str_ends_with($domain, '.'.$zone);
     }
 
     private function client(string $token): PendingRequest
