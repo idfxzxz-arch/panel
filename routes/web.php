@@ -28,6 +28,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/projects/{project}/environment', [EnvironmentVariableController::class, 'store'])->name('projects.environment.store');
     Route::delete('/projects/{project}/environment/{variable}', [EnvironmentVariableController::class, 'destroy'])->name('projects.environment.destroy');
     Route::get('/deployments/{deployment}', [DeploymentController::class, 'show'])->name('deployments.show');
+    Route::post('/projects/{project}/backups', [\App\Http\Controllers\BackupController::class, 'store'])->name('projects.backups.store');
+    Route::get('/projects/{project}/backups', [\App\Http\Controllers\BackupController::class, 'index'])->name('projects.backups.index');
+    Route::post('/projects/{project}/backups/{backup}/restore', [\App\Http\Controllers\BackupController::class, 'restore'])->name('projects.backups.restore');
+    Route::delete('/projects/{project}/backups/{backup}', [\App\Http\Controllers\BackupController::class, 'destroy'])->name('projects.backups.destroy');
+    Route::get('/projects/{project}/backups/{backup}/download', [\App\Http\Controllers\BackupController::class, 'download'])->name('projects.backups.download');
     Route::get('/infrastructure/domains', [DomainController::class, 'index'])->name('domains.index');
     Route::post('/infrastructure/domains', [DomainController::class, 'store'])->name('domains.store');
     Route::delete('/infrastructure/domains/{domain}', [DomainController::class, 'destroy'])->name('domains.destroy');

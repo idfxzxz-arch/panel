@@ -1,50 +1,286 @@
-@extends('layouts.app',['title'=>'Command Center'])
+@extends('layouts.app', ['title' => 'Command Center'])
+
 @section('content')
-<div class="page-head"><div><p class="eyebrow">Infrastructure overview</p><h1>Hosting Command Center</h1><p class="muted" style="margin:5px 0 0">Real-time project and deployment operations</p></div><a class="btn" href="{{ route('projects.create') }}">＋ DEPLOY PROJECT</a></div>
-
-<div class="ops-grid">
-    <a class="card threat-card interactive" href="{{ route('monitoring.index') }}" title="Buka monitoring sistem">
-        <div class="card-title"><span>PLATFORM STATUS</span><span class="{{ $infra['available'] ? 'live' : 'offline' }}">● {{ $infra['available'] ? 'LIVE' : 'OFFLINE' }}</span></div>
-        <div class="gauge-wrap"><div class="gauge" style="--score:{{ $stats['success_rate'] }}"><div><strong>{{ $stats['success_rate'] }}</strong><small>HEALTH SCORE</small></div></div></div>
-        <div class="micro-chart"><svg viewBox="0 0 320 55" preserveAspectRatio="none"><polyline points="{{ $trendPoints }}" fill="none" stroke="#f03847" stroke-width="2"/><text x="5" y="54" fill="#526174" font-size="7">{{ $series->first()['label'] }}</text><text x="280" y="54" fill="#526174" font-size="7">TODAY</text></svg></div>
-    </a>
-    <section class="metric-stack">
-        <a class="metric card interactive" href="{{ route('applications.index') }}"><span class="metric-icon red">◆</span><div><strong>{{ $stats['total'] }}</strong><small>TOTAL PROJECTS</small></div><em>ALL NODES</em></a>
-        <a class="metric card interactive" href="{{ route('applications.index',['status'=>'running']) }}"><span class="metric-icon green">●</span><div><strong>{{ $stats['running'] }}</strong><small>ACTIVE SERVICES</small></div><em>RUNNING</em></a>
-        <a class="metric card interactive" href="{{ route('applications.index',['status'=>'failed']) }}"><span class="metric-icon amber">▲</span><div><strong>{{ $stats['failed'] }}</strong><small>FAILED SERVICES</small></div><em>ATTENTION</em></a>
-    </section>
-    <section class="card map-card"><div class="card-title"><span>DEPLOYMENT NETWORK</span><span class="muted">GLOBAL EDGE</span></div><svg class="network" viewBox="0 0 520 235"><g stroke="#27303d" stroke-width="1" fill="none"><path d="M15 45H505M15 90H505M15 135H505M15 180H505M75 15V220M155 15V220M235 15V220M315 15V220M395 15V220M475 15V220"/></g><g fill="#171e28" stroke="#465263"><path d="M55 75l34-27 54 9 26 32-19 18-43-8-22 17-31-12zM174 117l23-18 30 13 18 50-14 43-26-26-9-38zM264 62l31-20 59 9 23 26-30 18-12 39-38-8-17-31zM350 137l39-21 50 21-2 41-54 18-34-24zM445 70l31-13 22 26-20 22-31-9z"/></g><g stroke="#f03847" fill="none" opacity=".65"><path d="M117 88Q225 20 318 84T420 150"/><path d="M117 88Q206 188 375 157"/></g><g fill="#f03847"><circle cx="117" cy="88" r="5"/><circle cx="318" cy="84" r="4"/><circle cx="420" cy="150" r="4"/><circle cx="375" cy="157" r="4"/></g><g fill="#fff"><circle cx="117" cy="88" r="1.5"/><circle cx="318" cy="84" r="1.5"/></g></svg><div class="map-legend"><span><i class="on"></i>Edge online</span><span><i></i>Private network</span><strong>{{ $stats['running'] }} ACTIVE</strong></div></section>
-</div>
-
-<div class="summary-grid">
-    <section class="card"><div class="card-title"><span>SERVICE INVENTORY</span><span class="muted">{{ $stats['total'] }} REGISTERED</span></div><div class="service-bars"><div><span>Running</span><i><b style="width:{{ $stats['total'] ? ($stats['running']/$stats['total'])*100 : 0 }}%;background:var(--green)"></b></i><strong>{{ $stats['running'] }}</strong></div><div><span>Failed</span><i><b style="width:{{ $stats['total'] ? ($stats['failed']/$stats['total'])*100 : 0 }}%;background:var(--red)"></b></i><strong>{{ $stats['failed'] }}</strong></div><div><span>Other</span><i><b style="width:{{ $stats['total'] ? (($stats['total']-$stats['running']-$stats['failed'])/$stats['total'])*100 : 0 }}%;background:var(--blue)"></b></i><strong>{{ $stats['total']-$stats['running']-$stats['failed'] }}</strong></div></div></section>
-    <section class="card"><div class="card-title"><span>APPLICATIONS</span><a href="{{ route('projects.create') }}">ADD NEW ＋</a></div><div class="app-list">@forelse($projects->take(5) as $project)<a href="{{ route('projects.show',$project) }}"><span class="app-symbol">{{ strtoupper(substr($project->name,0,2)) }}</span><div><strong>{{ $project->name }}</strong><small>{{ $project->primaryDomain?->domain ?? 'No domain' }}</small></div><span class="badge {{ $project->status }}">{{ $project->status }}</span></a>@empty<div class="empty">No applications deployed</div>@endforelse</div></section>
-    <section class="card"><div class="card-title"><span>RUNTIME DISTRIBUTION</span><span class="muted">BY TYPE</span></div><div class="donut-row"><div class="donut" style="--static:{{ $stats['total'] ? $projects->where('type','static')->count()/$stats['total']*100 : 0 }}%;--laravel:{{ $stats['total'] ? $projects->where('type','laravel')->count()/$stats['total']*100 : 0 }}%;--vite:{{ $stats['total'] ? $projects->where('type','vite')->count()/$stats['total']*100 : 0 }}%"><strong>{{ $stats['total'] }}</strong><small>APPS</small></div><div class="legend"><span><i style="background:var(--red)"></i>Static <b>{{ $projects->where('type','static')->count() }}</b></span><span><i style="background:var(--amber)"></i>Laravel <b>{{ $projects->where('type','laravel')->count() }}</b></span><span><i style="background:var(--blue)"></i>Vite <b>{{ $projects->where('type','vite')->count() }}</b></span><span><i style="background:var(--green)"></i>WordPress <b>{{ $projects->where('type','wordpress')->count() }}</b></span></div></div></section>
-</div>
-
-<section class="card"><div class="card-title"><span>RECENT DEPLOYMENT ACTIVITY</span><span class="live">● STREAMING</span></div><div style="overflow:auto"><table><thead><tr><th>Application</th><th>Trigger</th><th>Commit</th><th>Status</th><th>Timestamp</th></tr></thead><tbody>@forelse($deployments as $deployment)<tr><td><a href="{{ route('deployments.show',$deployment) }}" style="color:#e8edf4">{{ $deployment->project->name }}</a></td><td>{{ strtoupper($deployment->trigger) }}</td><td><code>{{ $deployment->commit_sha ? substr($deployment->commit_sha,0,8) : '--------' }}</code></td><td><span class="badge {{ $deployment->status }}">{{ $deployment->status }}</span></td><td>{{ $deployment->created_at->format('d M Y · H:i') }}</td></tr>@empty<tr><td colspan="5" class="muted">No deployment activity recorded.</td></tr>@endforelse</tbody></table></div></section>
-
 <style>
-.card-title{display:flex;justify-content:space-between;align-items:center;font-size:9px;letter-spacing:1.3px;color:#a8b3c1;margin-bottom:13px}.card-title a{color:var(--red)}.live{color:var(--green);font-size:8px}.ops-grid{display:grid;grid-template-columns:1.05fr .85fr 1.65fr;gap:14px}.threat-card{min-height:275px}.gauge-wrap{display:grid;place-items:center;height:170px}.gauge{--score:82;width:176px;height:88px;overflow:hidden;position:relative}.gauge:before{content:"";position:absolute;width:156px;height:156px;left:10px;top:10px;border-radius:50%;background:conic-gradient(from 270deg,var(--red) calc(var(--score)*1.8deg),#242b35 0 180deg,transparent 0);mask:radial-gradient(circle,#0000 57%,#000 59%)}.gauge div{position:absolute;inset:42px 0 0;text-align:center}.gauge strong{display:block;font-size:43px;line-height:1;color:#f04755;text-shadow:0 0 22px #f0384744}.gauge small,.metric small,.donut small{display:block;font-size:8px;letter-spacing:1.2px;color:#697789}.micro-chart{height:55px}.micro-chart svg{width:100%;height:100%}.metric-stack{display:grid;grid-template-rows:repeat(3,1fr);gap:10px}.metric{margin:0;display:flex;align-items:center;gap:13px;padding:14px}.metric-icon{display:grid;place-items:center;width:31px;height:31px;border:1px solid currentColor;background:#ffffff05}.metric-icon.red{color:var(--red)}.metric-icon.green{color:var(--green)}.metric-icon.amber{color:var(--amber)}.metric strong{display:block;font-size:23px;line-height:1}.metric em{margin-left:auto;font-style:normal;font-size:8px;color:#566475}.map-card{min-height:275px}.network{width:100%;height:205px}.map-legend{display:flex;gap:17px;align-items:center;font-size:8px;color:#687689}.map-legend i{display:inline-block;width:5px;height:5px;border-radius:50%;background:#4c5867;margin-right:5px}.map-legend i.on{background:var(--red);box-shadow:0 0 7px var(--red)}.map-legend strong{margin-left:auto;color:var(--red)}.summary-grid{display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:14px}.service-bars>div{display:grid;grid-template-columns:65px 1fr 25px;gap:10px;align-items:center;margin:17px 0;font-size:9px;color:#7f8c9d}.service-bars i{height:4px;background:#202733}.service-bars b{display:block;height:100%}.service-bars strong{text-align:right;color:#c5cfda}.app-list>a{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #1c232d}.app-list>a:last-child{border:0}.app-list>a>div{flex:1}.app-list strong{display:block;font-size:10px}.app-list small{display:block;font-size:8px;color:#647184}.app-symbol{display:grid;place-items:center;width:27px;height:27px;background:#171f2b;border:1px solid #303a48;color:#f05b68;font-size:8px}.empty{padding:45px 0;text-align:center;color:#566475}.donut-row{display:flex;align-items:center;justify-content:center;gap:28px;padding:13px 0}.donut{width:112px;height:112px;border-radius:50%;display:grid;place-items:center;align-content:center;background:radial-gradient(circle,#0d121a 51%,transparent 52%),conic-gradient(var(--red) 0 var(--static),var(--amber) 0 calc(var(--static) + var(--laravel)),var(--blue) 0 calc(var(--static) + var(--laravel) + var(--vite)),var(--green) 0)}.donut strong{font-size:27px;line-height:1}.legend{display:grid;gap:10px;min-width:85px}.legend span{display:grid;grid-template-columns:7px 1fr auto;gap:7px;align-items:center;font-size:9px;color:#778598}.legend i{width:6px;height:6px}.legend b{color:#d6dee8}@media(max-width:1100px){.ops-grid{grid-template-columns:1fr 1fr}.map-card{grid-column:1/-1}.summary-grid{grid-template-columns:1fr 1fr}.summary-grid>*:last-child{grid-column:1/-1}}@media(max-width:760px){.ops-grid,.summary-grid{grid-template-columns:1fr}.map-card,.summary-grid>*:last-child{grid-column:auto}.threat-card{min-height:auto}}
-.offline{color:var(--red);font-size:8px}.interactive,.map-card,.summary-grid>.card{cursor:pointer;transition:border-color .18s,transform .18s,box-shadow .18s}.interactive:hover,.map-card:hover,.summary-grid>.card:hover{border-color:#79313b;transform:translateY(-2px);box-shadow:0 16px 40px #0007,0 0 20px #f0384709}
+    .delay-4 { animation-delay: 0.4s; }
+    .delay-5 { animation-delay: 0.5s; }
+    .delay-6 { animation-delay: 0.6s; }
+    .delay-7 { animation-delay: 0.7s; }
+    .delay-8 { animation-delay: 0.8s; }
+    .delay-9 { animation-delay: 0.9s; }
+    .delay-10 { animation-delay: 1.0s; }
+    
+    /* Interactive Card Hover Glow Overrides */
+    .card-interactive {
+        transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease !important;
+    }
+    .card-interactive:hover {
+        transform: translateY(-4px) scale(1.01) !important;
+        box-shadow: 0 12px 30px -10px rgba(0,0,0,0.8), 0 0 24px rgba(240,56,71,0.08) !important;
+        border-color: rgba(255, 255, 255, 0.15) !important;
+    }
+    
+    /* Stats pulse animation */
+    @keyframes subtlePulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(0.95); }
+    }
+    .stats-icon-pulse {
+        animation: subtlePulse 3s ease-in-out infinite;
+    }
+    
+    /* SVG Map Path Animation */
+    .map-path-anim {
+        stroke-dasharray: 100;
+        stroke-dashoffset: 100;
+        animation: drawPath 3s ease forwards infinite;
+    }
+    @keyframes drawPath {
+        to { stroke-dashoffset: 0; }
+    }
 </style>
+
+<div class="page-head animate-fade-in delay-3">
+    <div class="page-head-left">
+        <p class="eyebrow">Infrastructure Overview</p>
+        <h1>Command Center</h1>
+        <p class="subtitle">Real-time project and deployment operations across all nodes</p>
+    </div>
+    <div class="actions">
+        <a class="btn btn-secondary" href="{{ route('monitoring.index') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M4 19V5M4 19h16M7 15l4-5 3 3 5-7"/></svg>
+            View Monitoring
+        </a>
+        <a class="btn btn-primary" href="{{ route('projects.create') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M12 5v14M5 12h14"/></svg>
+            Deploy Project
+        </a>
+    </div>
+</div>
+
+{{-- Stats Overview Row --}}
+<div class="grid grid-4" style="margin-bottom:14px">
+    <div class="card card-interactive animate-slide-up delay-4" onclick="window.location.href='{{ route('applications.index') }}'" style="cursor:pointer">
+        <div style="display:flex;align-items:center;gap:12px">
+            <span class="stats-icon-pulse" style="display:grid;place-items:center;width:40px;height:40px;border-radius:var(--radius);background:rgba(240,56,71,0.12);border:1px solid rgba(240,56,71,0.25);color:var(--red);font-size:18px">◆</span>
+            <div>
+                <div style="font-size:24px;font-weight:800;line-height:1">{{ $stats['total'] }}</div>
+                <div style="font-size:10px;color:var(--muted);font-weight:600">Total Projects</div>
+            </div>
+        </div>
+    </div>
+    <div class="card card-interactive animate-slide-up delay-5" onclick="window.location.href='{{ route('applications.index', ['status'=>'running']) }}'" style="cursor:pointer">
+        <div style="display:flex;align-items:center;gap:12px">
+            <span class="stats-icon-pulse" style="display:grid;place-items:center;width:40px;height:40px;border-radius:var(--radius);background:rgba(66,211,146,0.12);border:1px solid rgba(66,211,146,0.25);color:var(--green);font-size:18px;animation-delay:0.2s">●</span>
+            <div>
+                <div style="font-size:24px;font-weight:800;line-height:1;color:var(--green)">{{ $stats['running'] }}</div>
+                <div style="font-size:10px;color:var(--muted);font-weight:600">Active Services</div>
+            </div>
+        </div>
+    </div>
+    <div class="card card-interactive animate-slide-up delay-6" onclick="window.location.href='{{ route('applications.index', ['status'=>'failed']) }}'" style="cursor:pointer">
+        <div style="display:flex;align-items:center;gap:12px">
+            <span class="stats-icon-pulse" style="display:grid;place-items:center;width:40px;height:40px;border-radius:var(--radius);background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.25);color:var(--amber);font-size:18px;animation-delay:0.4s">▲</span>
+            <div>
+                <div style="font-size:24px;font-weight:800;line-height:1;color:var(--amber)">{{ $stats['failed'] }}</div>
+                <div style="font-size:10px;color:var(--muted);font-weight:600">Failed Services</div>
+            </div>
+        </div>
+    </div>
+    <div class="card animate-slide-up delay-7">
+        <div style="display:flex;align-items:center;gap:12px">
+            <span class="stats-icon-pulse" style="display:grid;place-items:center;width:40px;height:40px;border-radius:var(--radius);background:rgba(77,171,247,0.12);border:1px solid rgba(77,171,247,0.25);color:var(--blue);font-size:18px;animation-delay:0.6s">♥</span>
+            <div>
+                <div style="font-size:24px;font-weight:800;line-height:1;color:var(--blue)">{{ $stats['success_rate'] }}%</div>
+                <div style="font-size:10px;color:var(--muted);font-weight:600">Health Score</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Main Dashboard Grid --}}
+<div class="grid" style="grid-template-columns:1.2fr 0.9fr 1.6fr;gap:14px;margin-bottom:14px">
+    {{-- Platform Status Card --}}
+    <div class="card card-interactive animate-slide-up delay-6" onclick="window.location.href='{{ route('monitoring.index') }}'" style="cursor:pointer;min-height:280px">
+        <div class="card-title">
+            <span>Platform Status</span>
+            <span class="live">{{ $infra['available'] ? 'LIVE' : 'OFFLINE' }}</span>
+        </div>
+        <div style="display:grid;place-items:center;padding:20px 0">
+            <div style="position:relative;width:160px;height:80px;overflow:hidden">
+                <div style="position:absolute;width:140px;height:140px;left:10px;top:10px;border-radius:50%;background:conic-gradient(from 270deg,var(--red) calc({{ $stats['success_rate'] }}*1.8deg),#242b35 0 180deg,transparent 0);mask:radial-gradient(circle,#0000 57%,#000 59%)"></div>
+                <div style="position:absolute;inset:38px 0 0;text-align:center">
+                    <div style="font-size:38px;font-weight:800;line-height:1;color:#f04755;text-shadow:0 0 20px rgba(240,56,71,0.3)">{{ $stats['success_rate'] }}</div>
+                    <div style="font-size:8px;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase">Health Score</div>
+                </div>
+            </div>
+        </div>
+        <div style="height:50px">
+            <svg viewBox="0 0 320 50" preserveAspectRatio="none" style="width:100%;height:100%">
+                <polyline points="{{ $trendPoints }}" fill="none" stroke="#f03847" stroke-width="2" opacity="0.8" class="map-path-anim" />
+                <text x="5" y="48" fill="#526174" font-size="7">{{ $series->first()['label'] ?? 'START' }}</text>
+                <text x="280" y="48" fill="#526174" font-size="7">NOW</text>
+            </svg>
+        </div>
+    </div>
+
+    {{-- Quick Metrics Stack --}}
+    <div style="display:grid;grid-template-rows:repeat(3,1fr);gap:10px">
+        <div class="card card-interactive animate-slide-up delay-7" onclick="window.location.href='{{ route('applications.index') }}'" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px;margin:0">
+            <span style="display:grid;place-items:center;width:32px;height:32px;border:1px solid rgba(240,56,71,0.3);background:rgba(240,56,71,0.08);color:var(--red);font-size:14px">◆</span>
+            <div style="flex:1"><strong style="display:block;font-size:20px;line-height:1">{{ $stats['total'] }}</strong><small style="font-size:8px;color:var(--muted);letter-spacing:1px">ALL PROJECTS</small></div>
+            <em style="font-style:normal;font-size:8px;color:var(--muted2)">NODES</em>
+        </div>
+        <div class="card card-interactive animate-slide-up delay-8" onclick="window.location.href='{{ route('applications.index', ['status'=>'running']) }}'" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px;margin:0">
+            <span style="display:grid;place-items:center;width:32px;height:32px;border:1px solid rgba(66,211,146,0.3);background:rgba(66,211,146,0.08);color:var(--green);font-size:14px">●</span>
+            <div style="flex:1"><strong style="display:block;font-size:20px;line-height:1;color:var(--green)">{{ $stats['running'] }}</strong><small style="font-size:8px;color:var(--muted);letter-spacing:1px">RUNNING</small></div>
+            <em style="font-style:normal;font-size:8px;color:var(--muted2)">ACTIVE</em>
+        </div>
+        <div class="card card-interactive animate-slide-up delay-9" onclick="window.location.href='{{ route('applications.index', ['status'=>'failed']) }}'" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px;margin:0">
+            <span style="display:grid;place-items:center;width:32px;height:32px;border:1px solid rgba(245,166,35,0.3);background:rgba(245,166,35,0.08);color:var(--amber);font-size:14px">▲</span>
+            <div style="flex:1"><strong style="display:block;font-size:20px;line-height:1;color:var(--amber)">{{ $stats['failed'] }}</strong><small style="font-size:8px;color:var(--muted);letter-spacing:1px">FAILED</small></div>
+            <em style="font-style:normal;font-size:8px;color:var(--muted2)">ALERT</em>
+        </div>
+    </div>
+
+    {{-- Deployment Network Map --}}
+    <div class="card card-interactive animate-slide-up delay-10" onclick="window.location.href='{{ route('domains.index') }}'" style="cursor:pointer;min-height:280px">
+        <div class="card-title">
+            <span>Deployment Network</span>
+            <span class="muted">ROUTING</span>
+        </div>
+        <div style="width:100%;height:205px">
+            <svg viewBox="0 0 400 200" style="width:100%;height:100%">
+                <circle cx="200" cy="100" r="40" fill="none" stroke="#2c3645" stroke-dasharray="4 4" style="animation: spin 30s linear infinite; transform-origin: 200px 100px;" />
+                <circle cx="200" cy="100" r="70" fill="none" stroke="#1c232d"/>
+                <circle cx="200" cy="100" r="6" fill="var(--red)"/>
+                <circle cx="200" cy="100" r="14" fill="#f0384722" class="stats-icon-pulse"/>
+                <circle cx="160" cy="70" r="4" fill="var(--green)"/>
+                <circle cx="240" cy="130" r="4" fill="var(--green)"/>
+                <circle cx="140" cy="120" r="4" fill="var(--amber)"/>
+                <circle cx="270" cy="80" r="4" fill="var(--blue)"/>
+                <path class="map-path-anim" d="M200 100 L160 70 M200 100 L240 130 M200 100 L140 120 M200 100 L270 80" stroke="#2c3645" stroke-width="1"/>
+            </svg>
+        </div>
+        <div style="display:flex;gap:17px;align-items:center;font-size:8px;color:#687689">
+            <i style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#4c5867;margin-right:5px"></i> Edge Node 
+            <i style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--red);box-shadow:0 0 7px var(--red);margin-right:5px"></i> Gateway 
+            <strong style="margin-left:auto;color:var(--red)">{{ $stats['total'] }} ACTIVE ROUTES</strong>
+        </div>
+    </div>
+</div>
+
+{{-- Summary Grid --}}
+<div class="grid grid-3" style="margin-bottom:14px">
+    {{-- System Load --}}
+    <div class="card animate-slide-up delay-7">
+        <div class="card-title">
+            <span>SYSTEM LOAD</span>
+            <span class="muted">{{ $stats['total'] }} REGISTERED</span>
+        </div>
+        <div>
+            <div style="display:grid;grid-template-columns:65px 1fr 25px;gap:10px;align-items:center;margin:17px 0;font-size:9px;color:#7f8c9d">
+                <span>Running</span>
+                <i style="height:4px;background:#202733"><b style="display:block;height:100%;width:{{ $stats['total'] ? ($stats['running']/$stats['total'])*100 : 0 }}%;background:var(--green);transition:width 1s ease-out"></b></i>
+                <strong style="text-align:right;color:#c5cfda">{{ $stats['running'] }}</strong>
+            </div>
+            <div style="display:grid;grid-template-columns:65px 1fr 25px;gap:10px;align-items:center;margin:17px 0;font-size:9px;color:#7f8c9d">
+                <span>Failed</span>
+                <i style="height:4px;background:#202733"><b style="display:block;height:100%;width:{{ $stats['total'] ? ($stats['failed']/$stats['total'])*100 : 0 }}%;background:var(--red);transition:width 1s ease-out"></b></i>
+                <strong style="text-align:right;color:#c5cfda">{{ $stats['failed'] }}</strong>
+            </div>
+            <div style="display:grid;grid-template-columns:65px 1fr 25px;gap:10px;align-items:center;margin:17px 0;font-size:9px;color:#7f8c9d">
+                <span>Other</span>
+                <i style="height:4px;background:#202733"><b style="display:block;height:100%;width:{{ $stats['total'] ? (($stats['total']-$stats['running']-$stats['failed'])/$stats['total'])*100 : 0 }}%;background:var(--blue);transition:width 1s ease-out"></b></i>
+                <strong style="text-align:right;color:#c5cfda">{{ $stats['total']-$stats['running']-$stats['failed'] }}</strong>
+            </div>
+        </div>
+    </div>
+
+    {{-- Applications List --}}
+    <div class="card animate-slide-up delay-8">
+        <div class="card-title">
+            <span>APPLICATIONS</span>
+            <a href="{{ route('projects.create') }}">ADD NEW ＋</a>
+        </div>
+        <div>
+            @forelse($projects->take(5) as $project)
+            <a href="{{ route('projects.show', $project) }}" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #1c232d;transition:background 0.2s ease;border-radius:4px" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+                <span style="display:grid;place-items:center;width:27px;height:27px;background:#171f2b;border:1px solid #303a48;color:#f05b68;font-size:8px;border-radius:4px">{{ strtoupper(substr($project->name,0,2)) }}</span>
+                <div style="flex:1">
+                    <strong style="display:block;font-size:10px;color:var(--text)">{{ $project->name }}</strong>
+                    <small style="display:block;font-size:8px;color:#647184">{{ $project->primaryDomain?->domain ?? 'No domain' }}</small>
+                </div>
+                <span class="badge badge-{{ $project->status }}">{{ $project->status }}</span>
+            </a>
+            @empty
+            <div style="padding:45px 0;text-align:center;color:#566475">No applications deployed</div>
+            @endforelse
+        </div>
+    </div>
+
+    {{-- Runtime Distribution --}}
+    <div class="card animate-slide-up delay-9">
+        <div class="card-title">
+            <span>RUNTIME DISTRIBUTION</span>
+            <span class="muted">BY TYPE</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:28px;padding:13px 0">
+            <div style="width:112px;height:112px;border-radius:50%;display:grid;place-items:center;align-content:center;background:radial-gradient(circle,#0d121a 51%,transparent 52%),conic-gradient(var(--red) 0 {{ $stats['total'] ? $projects->where('type','static')->count()/$stats['total']*100 : 0 }}%,var(--amber) 0 calc({{ $stats['total'] ? $projects->where('type','static')->count()/$stats['total']*100 : 0 }}% + {{ $stats['total'] ? $projects->where('type','laravel')->count()/$stats['total']*100 : 0 }}%),var(--blue) 0);transition:all 1s ease-out">
+                <strong style="font-size:27px;line-height:1;color:var(--text)">{{ $stats['total'] }}</strong>
+                <small style="display:block;font-size:8px;letter-spacing:1.2px;color:#697789">APPS</small>
+            </div>
+            <div style="display:grid;gap:10px;min-width:85px">
+                <span style="display:grid;grid-template-columns:7px 1fr auto;gap:7px;align-items:center;font-size:9px;color:#778598">
+                    <i style="width:6px;height:6px;background:var(--red)"></i>Static <b style="color:#d6dee8">{{ $projects->where('type','static')->count() }}</b>
+                </span>
+                <span style="display:grid;grid-template-columns:7px 1fr auto;gap:7px;align-items:center;font-size:9px;color:#778598">
+                    <i style="width:6px;height:6px;background:var(--amber)"></i>Laravel <b style="color:#d6dee8">{{ $projects->where('type','laravel')->count() }}</b>
+                </span>
+                <span style="display:grid;grid-template-columns:7px 1fr auto;gap:7px;align-items:center;font-size:9px;color:#778598">
+                    <i style="width:6px;height:6px;background:var(--blue)"></i>Vite <b style="color:#d6dee8">{{ $projects->where('type','vite')->count() }}</b>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Recent Deployments Table --}}
+<div class="card animate-slide-up delay-10">
+    <div class="card-title">
+        <span>RECENT DEPLOYMENT ACTIVITY</span>
+        <span class="live">STREAMING</span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Application</th>
+                    <th>Trigger</th>
+                    <th>Commit</th>
+                    <th>Status</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($deployments as $deployment)
+                <tr style="transition:all 0.2s ease" onmouseover="this.style.background='rgba(255,255,255,0.02)';this.style.transform='translateX(4px)'" onmouseout="this.style.background='transparent';this.style.transform='translateX(0)'">
+                    <td><a href="{{ route('deployments.show', $deployment) }}" style="color:var(--text);font-weight:600">{{ $deployment->project->name }}</a></td>
+                    <td>{{ strtoupper($deployment->trigger) }}</td>
+                    <td><code>{{ $deployment->commit_sha ? substr($deployment->commit_sha,0,8) : '--------' }}</code></td>
+                    <td><span class="badge badge-{{ $deployment->status }}">{{ $deployment->status }}</span></td>
+                    <td>{{ $deployment->created_at->format('d M Y · H:i') }}</td>
+                </tr>
+                @empty
+                <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted)">No deployment activity recorded.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const activate = (selector, url) => {
-        const element = document.querySelector(selector);
-        if (!element) return;
-        element.setAttribute('role', 'link');
-        element.setAttribute('tabindex', '0');
-        element.addEventListener('click', event => {
-            if (!event.target.closest('a,button,form')) window.location.href = url;
-        });
-        element.addEventListener('keydown', event => {
-            if (event.key === 'Enter') window.location.href = url;
-        });
-    };
-    activate('.map-card', @json(route('domains.index')));
-    activate('.summary-grid > .card:nth-child(1)', @json(route('containers.index')));
-    activate('.summary-grid > .card:nth-child(3)', @json(route('applications.index')));
     window.setTimeout(() => window.location.reload(), 30000);
 });
 </script>

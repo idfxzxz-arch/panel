@@ -3,77 +3,105 @@
 @section('content')
 <div class="page-head">
     <div>
-        <p class="eyebrow">Provider connections</p>
-        <h1>GitHub & Cloudflare</h1>
-        <p class="muted">Hubungkan provider sekali, lalu deployment berikutnya cukup memilih repository dan subdomain.</p>
+        <p class="eyebrow">External Services</p>
+        <h1>Integrations</h1>
+        <p class="muted">Koneksikan panel dengan layanan pihak ketiga.</p>
     </div>
 </div>
 
-<div class="integration-grid">
+<div class="grid grid-2">
     <section class="card">
-        <div class="provider-head">
-            <span class="provider github">GH</span>
+        <div class="card-title">GITHUB ACCOUNT</div>
+        <div style="display:flex;gap:15px;margin-bottom:20px">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:40px;height:40px"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
             <div>
-                <h2>GitHub</h2>
-                <p>{{ $github ? 'Connected as @'.$github->username : 'Not connected' }}</p>
+                <strong style="display:block;font-size:14px;margin-bottom:4px">GitHub Token</strong>
+                <p class="muted" style="margin:0">Akses private repository untuk deployment.</p>
             </div>
-            <span class="badge {{ $github ? 'succeeded' : 'stopped' }}">{{ $github ? 'CONNECTED' : 'OFFLINE' }}</span>
         </div>
-
-        @if ($github)
-            <p class="muted">Repository public dan private yang dapat diakses token akan muncul di New Deployment.</p>
-            <form method="post" action="{{ route('integrations.github.destroy') }}" onsubmit="return confirm('Putuskan GitHub?')">
-                @csrf
-                @method('delete')
-                <button class="danger">DISCONNECT</button>
-            </form>
+        @if($github)
+            <div class="status-box">
+                <div>
+                    <strong style="color:#fff">Connected as {{ $github->username }}</strong>
+                    <p class="muted" style="margin:0">Token valid.</p>
+                </div>
+                <form method="post" action="{{ route('integrations.github.destroy') }}">
+                    @csrf @method('delete')
+                    <button class="btn btn-danger">DISCONNECT</button>
+                </form>
+            </div>
         @else
             <form method="post" action="{{ route('integrations.github') }}">
                 @csrf
-                <label>Fine-grained Personal Access Token
-                    <input type="password" name="token" required autocomplete="new-password" placeholder="github_pat_...">
+                <label>Personal Access Token (Classic)
+                    <input name="token" required placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
                 </label>
-                <button>CONNECT GITHUB</button>
+                <button class="btn btn-primary" style="margin-top:14px">CONNECT GITHUB</button>
             </form>
-            <p class="hint">Buat fine-grained token dengan akses read-only Contents dan Metadata hanya untuk repository yang akan di-host.</p>
         @endif
     </section>
 
     <section class="card">
-        <div class="provider-head">
-            <span class="provider cloudflare">CF</span>
+        <div class="card-title">CLOUDFLARE ACCOUNT</div>
+        <div style="display:flex;gap:15px;margin-bottom:20px">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:40px;height:40px;color:#f5a33b"><path d="M22.84 15.68a6.38 6.38 0 0 0-4.38-5.32 6.63 6.63 0 0 0-9.88-5.37 5.86 5.86 0 0 0-7.39 5.37A5.93 5.93 0 0 0 0 16.27a5.86 5.86 0 0 0 5.86 5.86h11.23a6.83 6.83 0 0 0 5.75-6.45z"/></svg>
             <div>
-                <h2>Cloudflare Zero Trust</h2>
-                <p>{{ $cloudflare ? $cloudflare->zone_name : 'Not connected' }}</p>
+                <strong style="display:block;font-size:14px;margin-bottom:4px">Cloudflare API Token</strong>
+                <p class="muted" style="margin:0">Otomatisasi DNS dan Cloudflare Tunnel.</p>
             </div>
-            <span class="badge {{ $cloudflare ? 'succeeded' : 'stopped' }}">{{ $cloudflare ? 'CONNECTED' : 'OFFLINE' }}</span>
         </div>
-
-        @if ($cloudflare)
-            <form method="post" action="{{ route('integrations.cloudflare.destroy') }}" class="disconnect-form" onsubmit="return confirm('Putuskan Cloudflare? Connector lokal akan dihentikan, tetapi DNS yang sudah ada tetap dipertahankan.')">
-                @csrf
-                @method('delete')
-                <button class="danger">DISCONNECT CLOUDFLARE</button>
-            </form>
-        @endif
-
-        <form method="post" action="{{ route('integrations.cloudflare') }}">
-            @csrf
-            <div class="form-grid">
-                <label>Account ID<input name="account_id" value="{{ $cloudflare?->account_id }}" required maxlength="32"></label>
-                <label>Zone ID<input name="zone_id" value="{{ $cloudflare?->zone_id }}" required maxlength="32"></label>
-                <label>Tunnel UUID<input name="tunnel_id" value="{{ $cloudflare?->tunnel_id }}" required></label>
-                <label>Base domain<input name="zone_name" value="{{ $cloudflare?->zone_name ?? 'idkxz.my.id' }}" required></label>
+        @if($cloudflare)
+            <div class="status-box">
+                <div>
+                    <strong style="color:#fff">Connected to {{ $cloudflare->zone_name }}</strong>
+                    <p class="muted" style="margin:0">Token valid.</p>
+                </div>
+                <form method="post" action="{{ route('integrations.cloudflare.destroy') }}">
+                    @csrf @method('delete')
+                    <button class="btn btn-danger">DISCONNECT</button>
+                </form>
             </div>
-            <label>API Token @if ($cloudflare)<span class="muted">(masukkan kembali untuk memperbarui)</span>@endif
-                <input type="password" name="api_token" required autocomplete="new-password" placeholder="DNS Write + Cloudflare Tunnel Edit">
-            </label>
-            <label>Tunnel Token <span class="muted">(opsional jika cloudflared sudah berjalan)</span>
-                <input type="password" name="tunnel_token" autocomplete="new-password">
-            </label>
-            <button>VERIFY & CONNECT CLOUDFLARE</button>
-        </form>
-        <p class="hint">API token membutuhkan Zone DNS Read/Write dan Account Cloudflare Tunnel Read/Edit. Tunnel harus bertipe remotely-managed.</p>
+        @else
+            <form method="post" action="{{ route('integrations.cloudflare') }}">
+                @csrf
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Account ID
+                            <input name="account_id" required>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Zone ID
+                            <input name="zone_id" required>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Zone Name (Domain)
+                            <input name="zone_name" required placeholder="example.com">
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Tunnel ID
+                            <input name="tunnel_id" required>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>API Token
+                        <input type="password" name="api_token" required>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Tunnel Token <span class="muted">(opsional jika cloudflared sudah berjalan)</span>
+                        <input type="password" name="tunnel_token" autocomplete="new-password">
+                    </label>
+                </div>
+                <button class="btn btn-primary" style="margin-top:10px">VERIFY & CONNECT CLOUDFLARE</button>
+            </form>
+            <p class="hint">API token membutuhkan Zone DNS Read/Write dan Account Cloudflare Tunnel Read/Edit. Tunnel harus bertipe remotely-managed.</p>
+        @endif
     </section>
 </div>
 

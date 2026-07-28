@@ -117,7 +117,13 @@ class ProjectController extends Controller
     public function show(Project $project)
     {
         $this->authorizeOwner($project);
-        $project->load(['primaryDomain', 'webhook', 'environmentVariables', 'deployments' => fn ($q) => $q->latest()->limit(20)]);
+        $project->load([
+            'primaryDomain',
+            'webhook',
+            'environmentVariables',
+            'deployments' => fn ($q) => $q->latest()->limit(20),
+            'backups' => fn ($q) => $q->latest()->limit(10)
+        ]);
 
         return view('projects.show', compact('project'));
     }
