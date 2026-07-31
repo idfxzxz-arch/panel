@@ -34,7 +34,7 @@ class IntegrationController extends Controller
             ]);
 
             return back()->with('success', 'GitHub terhubung sebagai '.$identity['login'].'.');
-        } catch (\Throwable $exception) {
+        } catch (\Illuminate\Http\Client\RequestException | \Illuminate\Http\Client\ConnectionException $exception) {
             report($exception);
 
             return back()->withErrors(['github' => 'Token GitHub tidak valid atau API tidak dapat dihubungi.']);
