@@ -18,6 +18,11 @@ class User extends Authenticatable
         return $this->hasMany(Project::class);
     }
 
+    public function githubAccounts()
+    {
+        return $this->hasMany(GithubAccount::class);
+    }
+
     public function githubAccount()
     {
         return $this->hasOne(GithubAccount::class);

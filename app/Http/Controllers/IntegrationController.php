@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GithubAccount;
 use App\Services\CloudflareConnectorService;
 use App\Services\CloudflareService;
 use App\Services\GithubService;
@@ -12,33 +13,49 @@ class IntegrationController extends Controller
     public function index()
     {
         return view('settings.integrations', [
-            'github' => auth()->user()->githubAccount,
+            'githubAccounts' => auth()->user()->githubAccounts()->orderBy('created_at', 'desc')->get(),
             'cloudflare' => auth()->user()->cloudflareIntegration,
         ]);
     }
 
     public function github(Request $request, GithubService $github)
     {
-        $data = $request->validate(['token' => ['required', 'string', 'min:20', 'max:255']]);
+        $data = $request->validate([
+            'token' => ['required', 'string', 'min:20', 'max:255'],
+            'name' => ['nullable', 'string', 'max:255'],
+        ]);
+
         try {
             $identity = $github->identity($data['token']);
-            $request->user()->githubAccount()->updateOrCreate([], [
-                'username' => $identity['login'], 'token' => $data['token'],
+            $account = $request->user()->githubAccounts()->create([
+                'username' => $identity['login'],
+                'token' => $data['token'],
+                'name' => $data['name'] ?? $identity['login'],
             ]);
+
+            return back()->with('success', 'GitHub terhubung sebagai '.$identity['login'].'.');
         } catch (\Throwable $exception) {
             report($exception);
 
             return back()->withErrors(['github' => 'Token GitHub tidak valid atau API tidak dapat dihubungi.']);
         }
-
-        return back()->with('success', 'GitHub terhubung sebagai '.$identity['login'].'.');
     }
 
-    public function disconnectGithub(Request $request)
+    public function disconnectGithub(Request $request, GithubAccount $githubAccount)
     {
-        $request->user()->githubAccount()->delete();
+        $this->authorize('delete', $githubAccount);
 
-        return back()->with('success', 'Koneksi GitHub dihapus.');
+        // Check if any projects are using this github account
+        $projectsUsingAccount = $githubAccount->projects()->count();
+
+        if ($projectsUsingAccount > 0) {
+            return back()->withErrors(['github' => 'Tidak dapat menghapus akun GitHub karena masih digunakan oleh '.$projectsUsingAccount.' project.']);
+        }
+
+        $username = $githubAccount->username;
+        $githubAccount->delete();
+
+        return back()->with('success', 'Koneksi GitHub ('.$username.') dihapus.');
     }
 
     public function cloudflare(Request $request, CloudflareService $cloudflare, CloudflareConnectorService $connector)

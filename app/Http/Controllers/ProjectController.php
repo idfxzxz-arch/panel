@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProjectRequest;
 use App\Jobs\DeployProject;
+use App\Models\GithubAccount;
 use App\Models\Deployment;
 use App\Models\Project;
 use App\Services\CloudflareService;
@@ -62,12 +63,16 @@ class ProjectController extends Controller
 
     public function create(GithubService $github)
     {
-        $account = auth()->user()->githubAccount;
+        $githubAccounts = auth()->user()->githubAccounts()->orderBy('created_at', 'desc')->get();
         $repositories = collect();
         $githubError = null;
-        if ($account) {
+        $selectedAccount = null;
+
+        // Use the first available account for repositories
+        if ($githubAccounts->isNotEmpty()) {
+            $selectedAccount = $githubAccounts->first();
             try {
-                $repositories = $github->repositories($account);
+                $repositories = $github->repositories($selectedAccount);
             } catch (\Throwable $exception) {
                 report($exception);
                 $githubError = 'Repository GitHub tidak dapat dimuat. Perbarui token di Integrations.';
@@ -76,10 +81,32 @@ class ProjectController extends Controller
 
         return view('projects.create', [
             'repositories' => $repositories,
-            'githubAccount' => $account,
+            'githubAccounts' => $githubAccounts,
+            'selectedGithubAccount' => $selectedAccount,
             'cloudflare' => auth()->user()->cloudflareIntegration,
             'githubError' => $githubError,
         ]);
+    }
+
+    public function getRepositories(GithubService $github, GithubAccount $githubAccount)
+    {
+        // Check if the github account belongs to the authenticated user
+        if ($githubAccount->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        try {
+            $repositories = $github->repositories($githubAccount);
+
+            return response()->json([
+                'repositories' => $repositories,
+                'username' => $githubAccount->username,
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return response()->json(['error' => 'Repository GitHub tidak dapat dimuat.'], 500);
+        }
     }
 
     public function applications()
@@ -98,11 +125,15 @@ class ProjectController extends Controller
 
     public function store(StoreProjectRequest $request)
     {
+        $validated = $request->validate([
+            'github_account_id' => ['nullable', 'exists:github_accounts,id'],
+        ]);
+
         $secret = Str::random(64);
-        $deployment = DB::transaction(function () use ($request, $secret) {
+        $deployment = DB::transaction(function () use ($request, $secret, $validated) {
             $p = Project::create($request->safe()->except(['domain', 'subdomain', 'domain_mode']) + [
                 'user_id' => $request->user()->id,
-                'github_account_id' => $request->user()->githubAccount?->id,
+                'github_account_id' => $validated['github_account_id'] ?? null,
             ]);
             $p->domains()->create(['domain' => $request->validated('domain'), 'ssl_enabled' => true, 'is_primary' => true]);
             $p->webhook()->create(['uuid' => (string) Str::uuid(), 'secret' => $secret]);

@@ -15,12 +15,15 @@ Route::redirect('/', '/projects');
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [AuthController::class, 'store'])->middleware('throttle:6,1')->name('login.store');
+    Route::get('/auth/github', [AuthController::class, 'redirectToGithub'])->name('login.github');
+    Route::get('/auth/github/callback', [AuthController::class, 'handleGithubCallback'])->name('login.github.callback');
 });
 Route::post('/webhooks/github/{uuid}', GithubWebhookController::class)->middleware('throttle:120,1')->name('webhooks.github');
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
     Route::get('/applications', [ProjectController::class, 'applications'])->name('applications.index');
     Route::resource('projects', ProjectController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
+    Route::get('/projects/create/repositories/{githubAccount}', [ProjectController::class, 'getRepositories'])->name('projects.repositories');
     Route::post('/projects/{project}/deploy', [ProjectActionController::class, 'deploy'])->name('projects.deploy');
     Route::post('/projects/{project}/{action}', [ProjectActionController::class, 'lifecycle'])->whereIn('action', ['start', 'stop', 'restart'])->name('projects.lifecycle');
     Route::get('/projects/{project}/container-logs', [ProjectActionController::class, 'logs'])->name('projects.logs');
@@ -40,7 +43,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/infrastructure/monitoring', [InfrastructureController::class, 'monitoring'])->name('monitoring.index');
     Route::get('/settings/integrations', [IntegrationController::class, 'index'])->name('integrations.index');
     Route::post('/settings/integrations/github', [IntegrationController::class, 'github'])->name('integrations.github');
-    Route::delete('/settings/integrations/github', [IntegrationController::class, 'disconnectGithub'])->name('integrations.github.destroy');
+    Route::delete('/settings/integrations/github/{githubAccount}', [IntegrationController::class, 'disconnectGithub'])->name('integrations.github.destroy');
     Route::post('/settings/integrations/cloudflare', [IntegrationController::class, 'cloudflare'])->name('integrations.cloudflare');
     Route::delete('/settings/integrations/cloudflare', [IntegrationController::class, 'disconnectCloudflare'])->name('integrations.cloudflare.destroy');
 });

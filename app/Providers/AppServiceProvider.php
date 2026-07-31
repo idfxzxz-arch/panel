@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Laravel\Socialite\Contracts\Factory;
+use Laravel\Socialite\SocialiteServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,5 +22,15 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
+    }
+
+    /**
+     * Get the services provided by the provider.
+     *
+     * @return array
+     */
+    public function provides()
+    {
+        return [Factory::class];
     }
 }
