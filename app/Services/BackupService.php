@@ -245,7 +245,6 @@ class BackupService
             'projects',
             'project_domains',
             'environment_variables',
-            'docker_containers',
             'deployments',
             'deployment_logs',
             'webhooks'

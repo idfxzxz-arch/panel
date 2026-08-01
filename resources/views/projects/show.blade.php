@@ -38,7 +38,7 @@
         @endforeach
         <a class="btn btn-secondary" href="{{ route('projects.logs', $project) }}" target="_blank">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-            CONTAINER LOGS
+            SERVER LOGS
         </a>
         @if($project->primaryDomain)
         <a class="btn btn-secondary" href="https://{{ $project->primaryDomain->domain }}" target="_blank">
@@ -46,7 +46,7 @@
             OPEN SITE ↗
         </a>
         @endif
-        <form method="post" action="{{ route('projects.destroy', $project) }}" onsubmit="return confirm('Hapus project ini? Container, source lokal, DNS Cloudflare, dan Tunnel ingress juga akan dihapus.')">
+        <form method="post" action="{{ route('projects.destroy', $project) }}" onsubmit="return confirm('Hapus project ini? Source lokal, DNS Cloudflare, dan Tunnel ingress juga akan dihapus.')">
             @csrf @method('delete')
             <button class="btn btn-danger">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
