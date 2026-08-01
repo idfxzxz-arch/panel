@@ -24,27 +24,57 @@ class ProjectActionController extends Controller
         return back()->with('success', 'Redeploy masuk antrean.');
     }
 
-    public function lifecycle(Project $project, string $action, ProcessRunner $runner)
+    public function lifecycle(Project $project, string $action)
     {
         $this->owner($project);
         abort_unless(in_array($action, ['start', 'stop', 'restart'], true), 404);
         try {
-            $runner->capture(['docker', 'compose', '-p', $project->slug, $action], $project->path());
+            $path = $project->path();
+            $pidFile = $path . '/.serve_pid';
+
+            if (in_array($action, ['stop', 'restart'])) {
+                if (\Illuminate\Support\Facades\File::exists($pidFile)) {
+                    $pid = trim(\Illuminate\Support\Facades\File::get($pidFile));
+                    if (is_numeric($pid) && $pid > 0) {
+                        exec("kill {$pid} > /dev/null 2>&1");
+                        exec("pkill -P {$pid} > /dev/null 2>&1");
+                    }
+                    \Illuminate\Support\Facades\File::delete($pidFile);
+                }
+            }
+
+            if (in_array($action, ['start', 'restart'])) {
+                $port = $project->port;
+                $cmd = "nohup php artisan serve --host=127.0.0.1 --port={$port} > storage/logs/serve.log 2>&1 & echo $!";
+                $pid = trim(shell_exec("cd " . escapeshellarg($path) . " && " . $cmd));
+                
+                if (is_numeric($pid)) {
+                    \Illuminate\Support\Facades\File::put($pidFile, $pid);
+                } else {
+                    throw new \RuntimeException("Failed to start process");
+                }
+            }
+
             $project->update(['status' => $action === 'stop' ? 'stopped' : 'running']);
 
             return back()->with('success', ucfirst($action).' berhasil.');
         } catch (\Throwable $e) {
             report($e);
 
-            return back()->withErrors(['docker' => 'Operasi Docker gagal. Periksa daemon dan log aplikasi.']);
+            return back()->withErrors(['process' => 'Operasi proses gagal. Periksa log aplikasi.']);
         }
     }
 
-    public function logs(Project $project, ProcessRunner $runner)
+    public function logs(Project $project)
     {
         $this->owner($project);
         try {
-            $logs = $runner->capture(['docker', 'compose', '-p', $project->slug, 'logs', '--no-color', '--tail', (string) config('hosting.log_lines')], $project->path());
+            $logFile = escapeshellarg($project->path() . '/storage/logs/serve.log');
+            $lines = escapeshellarg((string) config('hosting.log_lines', 500));
+            $logs = shell_exec("tail -n {$lines} {$logFile} 2>&1");
+            if (trim($logs) === '' || str_contains($logs, 'No such file or directory')) {
+                $logs = "Belum ada log.";
+            }
         } catch (\Throwable $e) {
             $logs = 'Tidak dapat membaca log: '.$e->getMessage();
         }

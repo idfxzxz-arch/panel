@@ -819,10 +819,7 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>
                         <span>Domains</span>
                     </a>
-                    <a class="nav-link {{ request()->routeIs('containers.*') ? 'active' : '' }}" href="{{ route('containers.index') }}">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="7" rx="1"/><rect x="3" y="13" width="18" height="7" rx="1"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>
-                        <span>Containers</span>
-                    </a>
+
                     <a class="nav-link {{ request()->routeIs('monitoring.*') ? 'active' : '' }}" href="{{ route('monitoring.index') }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M4 19h16M7 15l4-5 3 3 5-7"/></svg>
                         <span>Monitoring</span>
@@ -915,7 +912,7 @@
             <div class="shortcut-item"><span>Go to Overview</span><span class="shortcut-keys"><kbd class="kbd">G</kbd> <kbd class="kbd">O</kbd></span></div>
             <div class="shortcut-item"><span>Go to Applications</span><span class="shortcut-keys"><kbd class="kbd">G</kbd> <kbd class="kbd">A</kbd></span></div>
             <div class="shortcut-item"><span>Go to Domains</span><span class="shortcut-keys"><kbd class="kbd">G</kbd> <kbd class="kbd">D</kbd></span></div>
-            <div class="shortcut-item"><span>Go to Containers</span><span class="shortcut-keys"><kbd class="kbd">G</kbd> <kbd class="kbd">C</kbd></span></div>
+
             <div class="shortcut-item"><span>Go to Monitoring</span><span class="shortcut-keys"><kbd class="kbd">G</kbd> <kbd class="kbd">M</kbd></span></div>
             <div class="shortcut-item"><span>Go to Integrations</span><span class="shortcut-keys"><kbd class="kbd">G</kbd> <kbd class="kbd">I</kbd></span></div>
             <div class="shortcut-item"><span>New Deployment</span><span class="shortcut-keys"><kbd class="kbd">N</kbd></span></div>
@@ -1034,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { type: 'nav', name: 'Applications', meta: 'Workload Inventory', url: '{{ route('applications.index') }}', icon: '☰' },
         { type: 'nav', name: 'New Deployment', meta: 'Deploy Project', url: '{{ route('projects.create') }}', icon: '+' },
         { type: 'nav', name: 'Domains', meta: 'Edge Routing', url: '{{ route('domains.index') }}', icon: '🌐' },
-        { type: 'nav', name: 'Containers', meta: 'Docker Runtime', url: '{{ route('containers.index') }}', icon: '📦' },
+
         { type: 'nav', name: 'Monitoring', meta: 'Observability', url: '{{ route('monitoring.index') }}', icon: '📈' },
         { type: 'nav', name: 'Integrations', meta: 'GitHub & Cloudflare', url: '{{ route('integrations.index') }}', icon: '⚙' },
     ];
@@ -1111,7 +1108,7 @@ document.addEventListener('keydown', (e) => {
                 'o': '{{ route('projects.index') }}',
                 'a': '{{ route('applications.index') }}',
                 'd': '{{ route('domains.index') }}',
-                'c': '{{ route('containers.index') }}',
+
                 'm': '{{ route('monitoring.index') }}',
                 'i': '{{ route('integrations.index') }}',
             };

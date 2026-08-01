@@ -171,7 +171,7 @@
 </div>
 
 {{-- Summary Grid --}}
-<div class="grid grid-3" style="margin-bottom:14px">
+<div class="grid grid-2" style="margin-bottom:14px">
     {{-- System Load --}}
     <div class="card animate-slide-up delay-7">
         <div class="card-title">
@@ -219,30 +219,7 @@
         </div>
     </div>
 
-    {{-- Runtime Distribution --}}
-    <div class="card animate-slide-up delay-9">
-        <div class="card-title">
-            <span>RUNTIME DISTRIBUTION</span>
-            <span class="muted">BY TYPE</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:28px;padding:13px 0">
-            <div style="width:112px;height:112px;border-radius:50%;display:grid;place-items:center;align-content:center;background:radial-gradient(circle,#0d121a 51%,transparent 52%),conic-gradient(var(--red) 0 {{ $stats['total'] ? $projects->where('type','static')->count()/$stats['total']*100 : 0 }}%,var(--amber) 0 calc({{ $stats['total'] ? $projects->where('type','static')->count()/$stats['total']*100 : 0 }}% + {{ $stats['total'] ? $projects->where('type','laravel')->count()/$stats['total']*100 : 0 }}%),var(--blue) 0);transition:all 1s ease-out">
-                <strong style="font-size:27px;line-height:1;color:var(--text)">{{ $stats['total'] }}</strong>
-                <small style="display:block;font-size:8px;letter-spacing:1.2px;color:#697789">APPS</small>
-            </div>
-            <div style="display:grid;gap:10px;min-width:85px">
-                <span style="display:grid;grid-template-columns:7px 1fr auto;gap:7px;align-items:center;font-size:9px;color:#778598">
-                    <i style="width:6px;height:6px;background:var(--red)"></i>Static <b style="color:#d6dee8">{{ $projects->where('type','static')->count() }}</b>
-                </span>
-                <span style="display:grid;grid-template-columns:7px 1fr auto;gap:7px;align-items:center;font-size:9px;color:#778598">
-                    <i style="width:6px;height:6px;background:var(--amber)"></i>Laravel <b style="color:#d6dee8">{{ $projects->where('type','laravel')->count() }}</b>
-                </span>
-                <span style="display:grid;grid-template-columns:7px 1fr auto;gap:7px;align-items:center;font-size:9px;color:#778598">
-                    <i style="width:6px;height:6px;background:var(--blue)"></i>Vite <b style="color:#d6dee8">{{ $projects->where('type','vite')->count() }}</b>
-                </span>
-            </div>
-        </div>
-    </div>
+
 </div>
 
 {{-- Recent Deployments Table --}}

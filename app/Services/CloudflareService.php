@@ -42,7 +42,7 @@ class CloudflareService
     {
         $client = $this->client($integration->api_token);
         if (! $this->belongsToZone($domain->domain, $integration->zone_name)) {
-            $this->upsertIngress($client, $integration, $domain->domain);
+            $this->upsertIngress($client, $integration, $domain);
             $domain->update(['cloudflare_record_id' => null, 'cloudflare_status' => 'manual_dns']);
 
             return;
@@ -69,7 +69,7 @@ class CloudflareService
         if (! is_array($record) || empty($record['id'])) {
             throw new RuntimeException('Cloudflare tidak mengembalikan DNS record ID.');
         }
-        $this->upsertIngress($client, $integration, $domain->domain);
+        $this->upsertIngress($client, $integration, $domain);
         $domain->update(['cloudflare_record_id' => $record['id'], 'cloudflare_status' => 'active']);
     }
 
@@ -85,13 +85,15 @@ class CloudflareService
         $this->removeIngress($client, $integration, $domain->domain);
     }
 
-    private function upsertIngress(PendingRequest $client, CloudflareIntegration $integration, string $hostname): void
+    private function upsertIngress(PendingRequest $client, CloudflareIntegration $integration, ProjectDomain $domainModel): void
     {
+        $hostname = $domainModel->domain;
+        $port = $domainModel->project->port ?? 8000;
         $ingress = $this->ingress($client, $integration);
         $catchAll = collect($ingress)->first(fn ($rule) => ! isset($rule['hostname'])) ?? ['service' => 'http_status:404'];
         $rules = collect($ingress)->filter(fn ($rule) => isset($rule['hostname']) && $rule['hostname'] !== $hostname)->values()->all();
-        $rules[] = ['hostname' => $hostname, 'service' => 'https://traefik:443', 'originRequest' => [
-            'noTLSVerify' => true, 'httpHostHeader' => $hostname,
+        $rules[] = ['hostname' => $hostname, 'service' => 'http://127.0.0.1:'.$port, 'originRequest' => [
+            'httpHostHeader' => $hostname,
         ]];
         $rules[] = $catchAll;
         $this->putIngress($client, $integration, $rules);

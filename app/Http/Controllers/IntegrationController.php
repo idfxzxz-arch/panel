@@ -37,7 +37,8 @@ class IntegrationController extends Controller
         } catch (\Illuminate\Http\Client\RequestException | \Illuminate\Http\Client\ConnectionException $exception) {
             report($exception);
 
-            return back()->withErrors(['github' => 'Token GitHub tidak valid atau API tidak dapat dihubungi.']);
+            $msg = $exception instanceof \Illuminate\Http\Client\RequestException ? $exception->response->json('message') ?? $exception->getMessage() : $exception->getMessage();
+            return back()->withErrors(['github' => 'Token GitHub tidak valid atau API tidak dapat dihubungi: ' . $msg]);
         }
     }
 

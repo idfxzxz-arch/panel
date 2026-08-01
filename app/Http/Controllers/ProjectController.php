@@ -24,18 +24,8 @@ class ProjectController extends Controller
             ->with('project')->latest()->limit(8)->get();
         $successful = $deployments->where('status', 'succeeded')->count();
         $finished = $deployments->whereIn('status', ['succeeded', 'failed'])->count();
-        $infra = ['available' => false, 'version' => 'offline', 'containers' => 0, 'running' => 0];
-        try {
-            $info = json_decode($runner->capture(['docker', 'info', '--format', '{{json .}}'], base_path()), true, 512, JSON_THROW_ON_ERROR);
-            $infra = [
-                'available' => true,
-                'version' => $info['ServerVersion'] ?? 'unknown',
-                'containers' => $info['Containers'] ?? 0,
-                'running' => $info['ContainersRunning'] ?? 0,
-            ];
-        } catch (\Throwable $exception) {
-            report($exception);
-        }
+        $infra = ['available' => true, 'version' => 'Host System', 'running' => $projects->where('status', 'running')->count()];
+
         $allDeployments = Deployment::whereHas('project', fn ($query) => $query->where('user_id', auth()->id()))
             ->where('created_at', '>=', now()->subDays(11)->startOfDay())->get(['created_at']);
         $series = collect(range(11, 0))->map(function ($daysAgo) use ($allDeployments) {
@@ -112,9 +102,6 @@ class ProjectController extends Controller
     public function applications()
     {
         $query = auth()->user()->projects()->with(['primaryDomain', 'deployments' => fn ($query) => $query->latest()->limit(1)]);
-        if (in_array(request('type'), ['static', 'laravel', 'vite', 'wordpress'], true)) {
-            $query->where('type', request('type'));
-        }
         if (in_array(request('status'), ['pending', 'deploying', 'running', 'stopped', 'failed'], true)) {
             $query->where('status', request('status'));
         }
@@ -162,15 +149,19 @@ class ProjectController extends Controller
     public function destroy(Project $project, ProcessRunner $runner, CloudflareService $cloudflare)
     {
         $this->authorizeOwner($project);
+        
+        // Stop native process
         if (is_dir($project->path())) {
-            try {
-                $runner->capture(['docker', 'compose', '-p', $project->slug, 'down', '--remove-orphans'], $project->path());
-            } catch (\Throwable $exception) {
-                report($exception);
-
-                return back()->withErrors(['project' => 'Container gagal dihentikan; project tidak dihapus untuk mencegah resource yatim.']);
+            $pidFile = $project->path() . '/.serve_pid';
+            if (File::exists($pidFile)) {
+                $pid = trim(File::get($pidFile));
+                if (is_numeric($pid) && $pid > 0) {
+                    exec("kill {$pid} > /dev/null 2>&1");
+                    exec("pkill -P {$pid} > /dev/null 2>&1");
+                }
             }
         }
+        
         $project->load('domains');
         $integration = auth()->user()->cloudflareIntegration;
         if ($integration) {
@@ -183,7 +174,7 @@ class ProjectController extends Controller
             } catch (\Throwable $exception) {
                 report($exception);
 
-                return back()->withErrors(['cloudflare' => 'Container sudah dihentikan, tetapi project belum dihapus karena cleanup Cloudflare gagal.']);
+                return back()->withErrors(['cloudflare' => 'Process dihentikan, tetapi project belum dihapus karena cleanup Cloudflare gagal.']);
             }
         }
         if (is_dir($project->path())) {
@@ -191,7 +182,7 @@ class ProjectController extends Controller
         }
         $project->delete();
 
-        return redirect()->route('projects.index')->with('success', 'Project dan resource Compose berhasil dihapus.');
+        return redirect()->route('projects.index')->with('success', 'Project dan file lokal berhasil dihapus.');
     }
 
     private function authorizeOwner(Project $p): void

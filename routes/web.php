@@ -39,7 +39,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/infrastructure/domains', [DomainController::class, 'index'])->name('domains.index');
     Route::post('/infrastructure/domains', [DomainController::class, 'store'])->name('domains.store');
     Route::delete('/infrastructure/domains/{domain}', [DomainController::class, 'destroy'])->name('domains.destroy');
-    Route::get('/infrastructure/containers', [InfrastructureController::class, 'containers'])->name('containers.index');
+
     Route::get('/infrastructure/monitoring', [InfrastructureController::class, 'monitoring'])->name('monitoring.index');
     Route::get('/settings/integrations', [IntegrationController::class, 'index'])->name('integrations.index');
     Route::post('/settings/integrations/github', [IntegrationController::class, 'github'])->name('integrations.github');

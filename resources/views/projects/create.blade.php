@@ -33,8 +33,7 @@
     @endif
 
     <div class="section-title">APPLICATION</div>
-    <div class="form-grid"><label>Project name<input id="name" name="name" value="{{ old('name') }}" required placeholder="My application"></label><label>Project slug<input id="slug" name="slug" value="{{ old('slug') }}" required pattern="[a-z0-9-]+" placeholder="my-application"></label><label>Runtime<select id="type" name="type"><option value="static" @selected(old('type')==='static')>HTML Static</option><option value="laravel" @selected(old('type')==='laravel')>Laravel</option><option value="vite" @selected(old('type')==='vite')>React / Vite</option><option value="wordpress" @selected(old('type')==='wordpress')>WordPress</option></select></label><label>Branch<input id="branch" name="branch" value="{{ old('branch','main') }}" required></label></div>
-    <div id="wordpress-note" class="runtime-note">WordPress dapat dibuat tanpa repository. Harbor akan menjalankan WordPress resmi dengan MySQL 8.4, volume persisten, env database otomatis, SSL, dan domain dari Traefik/Cloudflare. Isi repository hanya jika ingin membawa theme/plugin custom dari GitHub.</div>
+    <div class="form-grid"><label>Project name<input id="name" name="name" value="{{ old('name') }}" required placeholder="My application"></label><label>Project slug<input id="slug" name="slug" value="{{ old('slug') }}" required pattern="[a-z0-9-]+" placeholder="my-application"></label><label>Branch<input id="branch" name="branch" value="{{ old('branch','main') }}" required></label></div>
     <div class="section-title">EDGE & DOMAIN</div>
     @if($cloudflare)
     <div class="domain-mode"><label><input type="radio" name="domain_mode" value="subdomain" @checked(old('domain_mode','subdomain') !== 'custom')> Subdomain Cloudflare</label><label><input type="radio" name="domain_mode" value="custom" @checked(old('domain_mode') === 'custom')> Domain sendiri</label></div>
@@ -50,17 +49,9 @@
 </style>
 <script>document.addEventListener('DOMContentLoaded',()=>{
     const repo=document.getElementById('repository');
-    const type=document.getElementById('type');
-    const note=document.getElementById('wordpress-note');
     const subdomainField=document.getElementById('subdomain-field');
     const customDomainField=document.getElementById('custom-domain-field');
     const githubAccountSelect = document.getElementById('github_account_id');
-
-    const syncRuntime=()=>{
-        const isWordPress=type&&type.value==='wordpress';
-        if(repo)repo.required=!isWordPress;
-        if(note)note.classList.toggle('active',isWordPress);
-    };
 
     const syncDomain=()=>{
         const mode=document.querySelector('input[name="domain_mode"]:checked')?.value||'subdomain';
@@ -139,8 +130,6 @@
     }
 
     document.querySelectorAll('input[name="domain_mode"]').forEach(input=>input.addEventListener('change',syncDomain));
-    if(type)type.addEventListener('change',syncRuntime);
-    syncRuntime();
     syncDomain();
 });
 </script>

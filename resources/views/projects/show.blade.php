@@ -62,8 +62,8 @@
         <div class="section-title">CONFIGURATION</div>
         <div class="detail-grid">
             <div class="detail-item">
-                <span class="detail-label">Runtime</span>
-                <span class="detail-value">{{ strtoupper($project->type) }}</span>
+                <span class="detail-label">Port</span>
+                <span class="detail-value">{{ $project->port ?? '—' }}</span>
             </div>
             <div class="detail-item">
                 <span class="detail-label">Primary Domain</span>
