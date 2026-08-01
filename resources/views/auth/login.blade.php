@@ -1,6 +1,30 @@
 @extends('layouts.app', ['title' => 'Login'])
 
 @section('content')
+<script>
+function showToast(type, title, message) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const icons = { success: '✓', error: '✕', warning: '⚠', info: 'i' };
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || 'i'}</span>
+        <div class="toast-body">
+            <div class="toast-title">${title}</div>
+            <div class="toast-msg">${message}</div>
+        </div>
+        <button class="toast-close" onclick="dismissToast(this.parentElement)">×</button>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => dismissToast(toast), 5000);
+}
+
+function dismissToast(toast) {
+    toast.classList.add('removing');
+    setTimeout(() => toast.remove(), 300);
+}
+</script>
 <style>
     body {
         overflow: hidden; /* Hide scrollbars for login page */
