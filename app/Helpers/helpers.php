@@ -4,8 +4,12 @@ if (!function_exists('format_bytes')) {
     /**
      * Format bytes to human readable format
      */
-    function format_bytes(int $bytes, int $precision = 2): string
+    function format_bytes(?int $bytes, int $precision = 2): string
     {
+        if ($bytes === null) {
+            return '-';
+        }
+        
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
 
         $bytes = max($bytes, 0);
