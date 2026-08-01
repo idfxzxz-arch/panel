@@ -12,6 +12,10 @@ class ProjectTemplateGenerator
         $envContent = $this->generateEnvContent($project);
         $envPath = $project->path() . '/.env';
 
+        if (!is_dir($project->path())) {
+            return;
+        }
+
         File::put($envPath, $envContent);
     }
 
