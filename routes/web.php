@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\DeploymentController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\EnvironmentVariableController;
@@ -21,6 +22,7 @@ Route::middleware('guest')->group(function () {
 Route::post('/webhooks/github/{uuid}', GithubWebhookController::class)->middleware('throttle:120,1')->name('webhooks.github');
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
+    Route::get('/dashboard', [ProjectController::class, 'index'])->name('dashboard');
     Route::get('/applications', [ProjectController::class, 'applications'])->name('applications.index');
     Route::resource('projects', ProjectController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
     Route::get('/projects/create/repositories/{githubAccount}', [ProjectController::class, 'getRepositories'])->name('projects.repositories');
@@ -31,11 +33,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/projects/{project}/environment', [EnvironmentVariableController::class, 'store'])->name('projects.environment.store');
     Route::delete('/projects/{project}/environment/{variable}', [EnvironmentVariableController::class, 'destroy'])->name('projects.environment.destroy');
     Route::get('/deployments/{deployment}', [DeploymentController::class, 'show'])->name('deployments.show');
-    Route::post('/projects/{project}/backups', [\App\Http\Controllers\BackupController::class, 'store'])->name('projects.backups.store');
-    Route::get('/projects/{project}/backups', [\App\Http\Controllers\BackupController::class, 'index'])->name('projects.backups.index');
-    Route::post('/projects/{project}/backups/{backup}/restore', [\App\Http\Controllers\BackupController::class, 'restore'])->name('projects.backups.restore');
-    Route::delete('/projects/{project}/backups/{backup}', [\App\Http\Controllers\BackupController::class, 'destroy'])->name('projects.backups.destroy');
-    Route::get('/projects/{project}/backups/{backup}/download', [\App\Http\Controllers\BackupController::class, 'download'])->name('projects.backups.download');
+    Route::post('/projects/{project}/backups', [BackupController::class, 'store'])->name('projects.backups.store');
+    Route::get('/projects/{project}/backups', [BackupController::class, 'index'])->name('projects.backups.index');
+    Route::post('/projects/{project}/backups/{backup}/restore', [BackupController::class, 'restore'])->name('projects.backups.restore');
+    Route::delete('/projects/{project}/backups/{backup}', [BackupController::class, 'destroy'])->name('projects.backups.destroy');
+    Route::get('/projects/{project}/backups/{backup}/download', [BackupController::class, 'download'])->name('projects.backups.download');
     Route::get('/infrastructure/domains', [DomainController::class, 'index'])->name('domains.index');
     Route::post('/infrastructure/domains', [DomainController::class, 'store'])->name('domains.store');
     Route::delete('/infrastructure/domains/{domain}', [DomainController::class, 'destroy'])->name('domains.destroy');

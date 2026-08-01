@@ -22,7 +22,7 @@ class ProjectFactory extends Factory
             'github_account_id' => GithubAccount::factory(),
             'name' => $name,
             'slug' => $slug,
-            'type' => $this->faker->randomElement(['static', 'laravel', 'vite', 'wordpress']),
+            'port' => $this->faker->optional()->numberBetween(3000, 9999),
             'repository' => $this->faker->optional()->url,
             'branch' => 'main',
             'status' => 'running',

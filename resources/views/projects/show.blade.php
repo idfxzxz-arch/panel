@@ -78,6 +78,7 @@
 
     <div class="card">
         <div class="section-title">GITHUB WEBHOOK</div>
+        @if($project->webhook)
         <p class="muted" style="font-size:10px;margin-bottom:10px">Content type: application/json · event: push</p>
         <code style="word-break:break-all;display:block;margin-bottom:12px">{{ route('webhooks.github', $project->webhook->uuid) }}</code>
         @if(session('webhook_secret'))
@@ -95,6 +96,9 @@
                 ROTATE SECRET
             </button>
         </form>
+        @else
+        <p class="muted" style="font-size:10px">Webhook belum dikonfigurasi untuk project ini.</p>
+        @endif
     </div>
 </div>
 

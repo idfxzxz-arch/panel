@@ -16,13 +16,23 @@ class AuthController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate(['email' => ['required', 'email'], 'password' => ['required', 'string']]);
-        if (! Auth::attempt($data, $request->boolean('remember'))) {
-            return back()->withErrors(['email' => 'Email atau password salah.'])->onlyInput('email');
+        $data = $request->validate([
+            'login' => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ]);
+
+        $loginField = filter_var($data['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
+        $credentials = [
+            $loginField => $data['login'],
+            'password' => $data['password'],
+        ];
+
+        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            return back()->withErrors(['login' => 'Username/email atau password salah.'])->onlyInput('login');
         }
         $request->session()->regenerate();
 
-        return redirect()->route('projects.index');
+        return redirect()->route('dashboard');
     }
 
     public function destroy(Request $request)
@@ -68,7 +78,7 @@ class AuthController extends Controller
             $request = request();
             $request->session()->regenerate();
 
-            return redirect()->intended(route('projects.index'));
+            return redirect()->intended(route('dashboard'));
 
         } catch (\Throwable $exception) {
             report($exception);

@@ -328,10 +328,10 @@ function dismissToast(toast) {
             @csrf
             
             <div class="input-group stagger-item">
-                <input type="email" name="email" value="{{ old('email') }}" required autofocus
-                       placeholder=" " autocomplete="email" class="input-with-icon" id="emailInput">
+                <input type="text" name="login" value="{{ old('login') }}" required autofocus
+                       placeholder=" " autocomplete="username" class="input-with-icon" id="loginInput">
                 <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                <label class="floating-label" for="emailInput">Email Address</label>
+                <label class="floating-label" for="loginInput">Username or Email</label>
             </div>
             
             <div class="input-group stagger-item">
