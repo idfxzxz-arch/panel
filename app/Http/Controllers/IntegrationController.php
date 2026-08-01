@@ -6,6 +6,8 @@ use App\Models\GithubAccount;
 use App\Services\CloudflareConnectorService;
 use App\Services\CloudflareService;
 use App\Services\GithubService;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Request;
 
 class IntegrationController extends Controller
@@ -34,11 +36,12 @@ class IntegrationController extends Controller
             ]);
 
             return back()->with('success', 'GitHub terhubung sebagai '.$identity['login'].'.');
-        } catch (\Illuminate\Http\Client\RequestException | \Illuminate\Http\Client\ConnectionException $exception) {
+        } catch (RequestException|ConnectionException $exception) {
             report($exception);
 
-            $msg = $exception instanceof \Illuminate\Http\Client\RequestException ? $exception->response->json('message') ?? $exception->getMessage() : $exception->getMessage();
-            return back()->withErrors(['github' => 'Token GitHub tidak valid atau API tidak dapat dihubungi: ' . $msg]);
+            $msg = $exception instanceof RequestException ? $exception->response->json('message') ?? $exception->getMessage() : $exception->getMessage();
+
+            return back()->withErrors(['github' => 'Token GitHub tidak valid atau API tidak dapat dihubungi: '.$msg]);
         }
     }
 
@@ -69,6 +72,11 @@ class IntegrationController extends Controller
             'api_token' => ['required', 'string', 'min:20', 'max:255'],
             'tunnel_token' => ['nullable', 'string', 'min:20', 'max:2048'],
         ]);
+        $data['api_token'] = CloudflareService::normalizeToken($data['api_token']);
+        if (isset($data['tunnel_token'])) {
+            $data['tunnel_token'] = trim($data['tunnel_token']);
+        }
+
         try {
             $cloudflare->verify($data);
             $integration = $request->user()->cloudflareIntegration()->updateOrCreate([], $data + ['verified_at' => now()]);
@@ -79,10 +87,33 @@ class IntegrationController extends Controller
         } catch (\Throwable $exception) {
             report($exception);
 
-            return back()->withErrors(['cloudflare' => 'Cloudflare gagal diverifikasi: '.$exception->getMessage()]);
+            return back()->withErrors(['cloudflare' => 'Cloudflare gagal diverifikasi: '.$this->cloudflareErrorMessage($exception)]);
         }
 
         return back()->with('success', 'Cloudflare '.$integration->zone_name.' dan Tunnel berhasil dihubungkan.');
+    }
+
+    private function cloudflareErrorMessage(\Throwable $exception): string
+    {
+        if (! $exception instanceof RequestException) {
+            return $exception->getMessage();
+        }
+
+        $response = $exception->response;
+        $messages = collect($response->json('errors', []))
+            ->pluck('message')
+            ->filter()
+            ->implode(', ');
+
+        if ($response->status() === 403 && str_contains(strtolower($messages), 'invalid access token')) {
+            return 'API Token tidak valid. Paste token saja tanpa awalan "Bearer", jangan gunakan Global API Key, dan pastikan token belum expired.';
+        }
+
+        if ($response->status() === 403) {
+            return 'API Token tidak punya permission yang cukup. Butuh Zone DNS Read/Edit dan Account Cloudflare Tunnel Read/Edit.';
+        }
+
+        return $messages !== '' ? $messages : $exception->getMessage();
     }
 
     public function disconnectCloudflare(Request $request, CloudflareConnectorService $connector)

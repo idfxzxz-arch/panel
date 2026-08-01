@@ -138,6 +138,17 @@ class CloudflareService
 
     private function client(string $token): PendingRequest
     {
-        return Http::withToken($token)->acceptJson()->asJson()->timeout(20);
+        return Http::withToken(self::normalizeToken($token))->acceptJson()->asJson()->timeout(20);
+    }
+
+    public static function normalizeToken(string $token): string
+    {
+        $token = trim($token, " \t\n\r\0\x0B\"'");
+
+        if (str_starts_with(strtolower($token), 'bearer ')) {
+            return trim(substr($token, 7), " \t\n\r\0\x0B\"'");
+        }
+
+        return $token;
     }
 }
