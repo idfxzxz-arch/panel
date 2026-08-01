@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/projects');
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [AuthController::class, 'create'])->name('login');
+    Route::get('/login', [AuthController::class, 'create'])->name('login')->middleware('redirect.if.authenticated');
     Route::post('/login', [AuthController::class, 'store'])->middleware('throttle:6,1')->name('login.store');
-    Route::get('/auth/github', [AuthController::class, 'redirectToGithub'])->name('login.github');
+    Route::get('/auth/github', [AuthController::class, 'redirectToGithub'])->name('login.github')->middleware('redirect.if.authenticated');
     Route::get('/auth/github/callback', [AuthController::class, 'handleGithubCallback'])->name('login.github.callback');
 });
 Route::post('/webhooks/github/{uuid}', GithubWebhookController::class)->middleware('throttle:120,1')->name('webhooks.github');
