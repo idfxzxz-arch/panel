@@ -15,10 +15,12 @@ class StoreProjectRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:100'], 'slug' => ['required', 'regex:/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/', 'unique:projects,slug'],
-            'repository' => ['required', 'url:http,https', 'max:500', 'regex:#^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?$#'],
+            'name' => ['required', 'string', 'max:100'],
+            'slug' => ['required', 'regex:/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/', Rule::unique('projects', 'slug')->ignore($this->route('project')?->id)],
+            'type' => ['required', Rule::in(['static', 'laravel', 'vite', 'wordpress'])],
+            'repository' => ['nullable', 'url:http,https', 'max:500', 'regex:#^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?$#'],
             'branch' => ['required', 'max:200', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', 'not_regex:/\.\./'],
-            'domain' => ['required', 'max:253', 'regex:/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/', 'unique:project_domains,domain'],
+            'domain' => ['required', 'max:253', 'regex:/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/', Rule::unique('project_domains', 'domain')->ignore($this->route('project')?->domains?->first()?->id)],
             'subdomain' => ['nullable', 'max:63', 'regex:/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/'],
             'domain_mode' => ['nullable', Rule::in(['subdomain', 'custom'])],
         ];
@@ -35,6 +37,7 @@ class StoreProjectRequest extends FormRequest
             'domain' => $integration && $this->domain_mode !== 'custom' && $subdomain !== '' ? $subdomain.'.'.$integration->zone_name : strtolower(rtrim((string) $this->domain, '.')),
             'repository' => $repository !== '' ? $repository : null,
             'branch' => trim((string) $this->branch) !== '' ? $this->branch : 'main',
+            'type' => $this->type ?? 'laravel',
         ]);
     }
 }

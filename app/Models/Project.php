@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Project extends Model
 {
     use HasFactory;
-    protected $fillable = ['user_id', 'github_account_id', 'name', 'slug', 'port', 'repository', 'branch', 'status', 'last_commit', 'last_deployed_at'];
+    protected $fillable = ['user_id', 'github_account_id', 'name', 'slug', 'port', 'repository', 'branch', 'status', 'last_commit', 'last_deployed_at', 'type'];
     protected function casts(): array
     {
         return ['last_deployed_at' => 'datetime'];

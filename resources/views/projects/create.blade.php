@@ -33,7 +33,46 @@
     @endif
 
     <div class="section-title">APPLICATION</div>
-    <div class="form-grid"><label>Project name<input id="name" name="name" value="{{ old('name') }}" required placeholder="My application"></label><label>Project slug<input id="slug" name="slug" value="{{ old('slug') }}" required pattern="[a-z0-9-]+" placeholder="my-application"></label><label>Branch<input id="branch" name="branch" value="{{ old('branch','main') }}" required></label></div>
+    <div class="form-grid">
+        <label>Project name<input id="name" name="name" value="{{ old('name') }}" required placeholder="My application"></label>
+        <label>Project slug<input id="slug" name="slug" value="{{ old('slug') }}" required pattern="[a-z0-9-]+" placeholder="my-application"></label>
+        <label>Branch<input id="branch" name="branch" value="{{ old('branch','main') }}" required></label>
+    </div>
+    <div class="section-title">RUNTIME TYPE</div>
+    <div class="runtime-selector">
+        <label>
+            <input type="radio" name="type" value="laravel" @checked(old('type') === 'laravel' || !old('type'))>
+            <span class="runtime-card">
+                <span class="runtime-icon">🧩</span>
+                <span class="runtime-name">Laravel</span>
+                <span class="runtime-desc">PHP Framework</span>
+            </span>
+        </label>
+        <label>
+            <input type="radio" name="type" value="vite" @checked(old('type') === 'vite')>
+            <span class="runtime-card">
+                <span class="runtime-icon">⚡</span>
+                <span class="runtime-name">React + Vite</span>
+                <span class="runtime-desc">Frontend Modern</span>
+            </span>
+        </label>
+        <label>
+            <input type="radio" name="type" value="static" @checked(old('type') === 'static')>
+            <span class="runtime-card">
+                <span class="runtime-icon">📄</span>
+                <span class="runtime-name">Static HTML</span>
+                <span class="runtime-desc">HTML/CSS/JS</span>
+            </span>
+        </label>
+        <label>
+            <input type="radio" name="type" value="wordpress" @checked(old('type') === 'wordpress')>
+            <span class="runtime-card">
+                <span class="runtime-icon">🌐</span>
+                <span class="runtime-name">WordPress</span>
+                <span class="runtime-desc">CMS Popular</span>
+            </span>
+        </label>
+    </div>
     <div class="section-title">EDGE & DOMAIN</div>
     @if($cloudflare)
     <div class="domain-mode"><label><input type="radio" name="domain_mode" value="subdomain" @checked(old('domain_mode','subdomain') !== 'custom')> Subdomain Cloudflare</label><label><input type="radio" name="domain_mode" value="custom" @checked(old('domain_mode') === 'custom')> Domain sendiri</label></div>
@@ -45,7 +84,19 @@
     @endif
     <div class="deploy-submit"><div><strong>Ready to deploy</strong><small>Deployment berjalan di background queue dan log tersedia real-time.</small></div><button class="btn btn-primary">DEPLOY APPLICATION →</button></div>
 </form>
-<style>.steps{display:flex;align-items:center;max-width:560px;margin:20px 0}.steps span{display:flex;align-items:center;gap:7px;color:#536173;font-size:9px;letter-spacing:1px}.steps span.active{color:#fff}.steps b{display:grid;place-items:center;width:23px;height:23px;border:1px solid #394453}.steps .active b{border-color:var(--red);color:var(--red)}.steps i{height:1px;background:#29313d;flex:1;margin:0 12px}.deployment-form{max-width:920px}.section-title{font-size:9px;letter-spacing:1.4px;color:var(--red);padding:8px 0 12px;margin:10px 0 16px;border-bottom:1px solid var(--line)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.connected{font-size:9px;color:var(--green);margin:-7px 0 18px}.connect-empty{padding:20px;border:1px dashed #394453;text-align:center;margin-bottom:15px}.connect-empty p{color:var(--muted)}.runtime-note{display:none;margin:0 0 18px;padding:11px;border:1px solid #27563f;background:#0d2119;color:#8fd9b6;font-size:10px}.runtime-note.active{display:block}.domain-mode{display:flex;gap:8px;margin:0 0 13px}.domain-mode label{display:flex;align-items:center;gap:7px;padding:9px 11px;border:1px solid var(--line2);background:#090d14}.domain-mode input{width:auto;margin:0}.domain-input{display:flex;margin:6px 0 14px}.domain-input input{margin:0;border-radius:3px 0 0 3px}.domain-input span{display:flex;align-items:center;padding:0 13px;background:#171e28;border:1px solid var(--line2);border-left:0;color:#95a2b3;white-space:nowrap}.edge-ready,.edge-warning{display:flex;justify-content:space-between;gap:12px;padding:11px;border:1px solid #245f48;background:#0d281e;color:var(--green);font-size:9px}.edge-ready small{color:#729b89;text-align:right}.edge-warning{border-color:#705628;background:#2b2110;color:var(--amber)}.deploy-submit{display:flex;justify-content:space-between;align-items:center;margin-top:25px;padding-top:18px;border-top:1px solid var(--line)}.deploy-submit strong,.deploy-submit small{display:block}.deploy-submit small{color:var(--muted);font-size:9px;margin-top:3px}.github-account-selector label{display:block;margin-bottom:8px}.github-account-selector select{width:100%;padding:8px;border:1px solid var(--line2);background:#090d14;color:#fff;border-radius:3px}@media(max-width:650px){.form-grid{grid-template-columns:1fr}.domain-mode,.deploy-submit,.edge-ready{align-items:stretch;flex-direction:column;gap:12px}.edge-ready small{text-align:left}}
+<style>.steps{display:flex;align-items:center;max-width:560px;margin:20px 0}.steps span{display:flex;align-items:center;gap:7px;color:#536173;font-size:9px;letter-spacing:1px}.steps span.active{color:#fff}.steps b{display:grid;place-items:center;width:23px;height:23px;border:1px solid #394453}.steps .active b{border-color:var(--red);color:var(--red)}.steps i{height:1px;background:#29313d;flex:1;margin:0 12px}.deployment-form{max-width:920px}.section-title{font-size:9px;letter-spacing:1.4px;color:var(--red);padding:8px 0 12px;margin:10px 0 16px;border-bottom:1px solid var(--line)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.connected{font-size:9px;color:var(--green);margin:-7px 0 18px}.connect-empty{padding:20px;border:1px dashed #394453;text-align:center;margin-bottom:15px}.connect-empty p{color:var(--muted)}.runtime-note{display:none;margin:0 0 18px;padding:11px;border:1px solid #27563f;background:#0d2119;color:#8fd9b6;font-size:10px}.runtime-note.active{display:block}.domain-mode{display:flex;gap:8px;margin:0 0 13px}.domain-mode label{display:flex;align-items:center;gap:7px;padding:9px 11px;border:1px solid var(--line2);background:#090d14}.domain-mode input{width:auto;margin:0}.domain-input{display:flex;margin:6px 0 14px}.domain-input input{margin:0;border-radius:3px 0 0 3px}.domain-input span{display:flex;align-items:center;padding:0 13px;background:#171e28;border:1px solid var(--line2);border-left:0;color:#95a2b3;white-space:nowrap}.edge-ready,.edge-warning{display:flex;justify-content:space-between;gap:12px;padding:11px;border:1px solid #245f48;background:#0d281e;color:var(--green);font-size:9px}.edge-ready small{color:#729b89;text-align:right}.edge-warning{border-color:#705628;background:#2b2110;color:var(--amber)}.deploy-submit{display:flex;justify-content:space-between;align-items:center;margin-top:25px;padding-top:18px;border-top:1px solid var(--line)}.deploy-submit strong,.deploy-submit small{display:block}.deploy-submit small{color:var(--muted);font-size:9px;margin-top:3px}.github-account-selector label{display:block;margin-bottom:8px}.github-account-selector select{width:100%;padding:8px;border:1px solid var(--line2);background:#090d14;color:#fff;border-radius:3px}
+
+.runtime-selector{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.runtime-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 12px;background:#090d14;border:1px solid var(--line2);border-radius:6px;cursor:pointer;transition:all 0.2s ease}
+.runtime-card:hover{border-color:var(--red);background:#171e28}
+.runtime-selector input[type="radio"]{display:none}
+.runtime-selector label{cursor:pointer}
+.runtime-selector label:has(input:checked) .runtime-card{border-color:var(--red);background:#171e28;box-shadow:0 0 0 2px rgba(240,56,71,0.3)}
+.runtime-icon{font-size:24px}
+.runtime-name{font-weight:600;font-size:11px;color:#fff}
+.runtime-desc{font-size:9px;color:var(--muted)}
+
+@media(max-width:650px){.form-grid{grid-template-columns:1fr}.domain-mode,.deploy-submit,.edge-ready{align-items:stretch;flex-direction:column;gap:12px}.edge-ready small{text-align:left}.runtime-selector{grid-template-columns:repeat(2,1fr)}}
 </style>
 <script>document.addEventListener('DOMContentLoaded',()=>{
     const repo=document.getElementById('repository');
